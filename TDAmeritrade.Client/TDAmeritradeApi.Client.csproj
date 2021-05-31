@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <Company></Company>
+    <Copyright>Copyright © 2021 Brian Mello</Copyright>
+    <Authors>Brian Mello</Authors>
+    <Description>.NET Client for the TD Ameritrade Trading Platform</Description>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <Product>TD Ameritrade Client Library</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.33" />
+    <PackageReference Include="RestSharp" Version="106.11.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

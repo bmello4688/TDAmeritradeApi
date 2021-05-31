@@ -1,0 +1,33 @@
+﻿namespace TDAmeritradeApi.Client.Models.Streamer
+{
+    public enum StreamerDataService
+    {
+        ACCT_ACTIVITY,
+        ACTIVES_NASDAQ,
+        ACTIVES_NYSE,
+        ACTIVES_OTCBB,
+        ACTIVES_OPTIONS,
+        FOREX_BOOK,
+        FUTURES_BOOK,
+        LISTED_BOOK,
+        NASDAQ_BOOK,
+        OPTIONS_BOOK,
+        FUTURES_OPTIONS_BOOK,
+        CHART_EQUITY,
+        CHART_FUTURES,
+        CHART_HISTORY_FUTURES,
+        QUOTE,
+        LEVELONE_FUTURES,
+        LEVELONE_FOREX,
+        LEVELONE_FUTURES_OPTIONS,
+        OPTION,
+        NEWS_HEADLINE,
+        NEWS_STORY,
+        NEWS_HEADLINE_LIST,
+        TIMESALE_EQUITY,
+        TIMESALE_FUTURES,
+        TIMESALE_FOREX,
+        TIMESALE_OPTIONS,
+        STREAMER_SERVER
+    }
+}
