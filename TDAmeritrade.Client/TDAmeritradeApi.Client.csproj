@@ -8,6 +8,7 @@
     <Description>.NET Client for the TD Ameritrade Trading Platform</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <Product>TD Ameritrade Client Library</Product>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
