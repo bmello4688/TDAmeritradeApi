@@ -2,6 +2,7 @@
 {
     public enum SecurityStatus
     {
+        Unknown,
         Normal,
         Halted,
         Closed
