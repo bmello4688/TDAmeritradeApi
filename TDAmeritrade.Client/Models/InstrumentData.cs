@@ -107,8 +107,8 @@
     public class OptionDeliverable
     {
         public string symbol { get; set; }
-        public int deliverableUnits { get; set; }
-        public CurrencyType currencyType { get; set; }
-        public InstrumentAssetType assetType { get; set; }
+        public float deliverableUnits { get; set; }
+        public CurrencyType? currencyType { get; set; }
+        public string assetType { get; set; }
     }
 }

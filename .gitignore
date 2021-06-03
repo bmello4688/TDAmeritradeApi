@@ -153,3 +153,4 @@ $RECYCLE.BIN/
 # Custom
 Docs/
 /.vs/TDAmeritrade.Client
+/.vs/TDAmeritradeApi/DesignTimeBuild
