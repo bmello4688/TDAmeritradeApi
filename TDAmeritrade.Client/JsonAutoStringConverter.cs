@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Buffers;
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -32,7 +34,18 @@ namespace TDAmeritradeApi.Client
                 return reader.GetBoolean().ToString();
             }
             else
-                throw new NotSupportedException(reader.GetString());
+            {
+                var doc = JsonDocument.ParseValue(ref reader);
+
+                return doc.RootElement.ToString();
+            }
+        }
+
+        private static string GetText(Utf8JsonReader reader)
+        {
+            byte[] sequence = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
+
+            return Encoding.UTF8.GetString(sequence);
         }
 
         public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)

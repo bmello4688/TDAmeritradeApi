@@ -121,18 +121,6 @@ namespace TDAmeritradeApi.Client
             await Send(request);
         }
 
-        public async Task StreamerAsync()
-        {
-            var request = new Request()
-            {
-                service = "STREAMER_SERVER",
-                command = "ADMIN",
-                //parameters = new Dictionary<string, string>()
-            };
-
-            await Send(request);
-        }
-
         public async Task SubscribeToMostActiveTradesAsync(TradeVenueType activeTradeGroupType, ActiveTradeSubscriptionDuration duration, ListOptionType listOptionType = ListOptionType.BOTH, bool optionOrderDescending = false)
         {
             string key;
@@ -253,6 +241,22 @@ namespace TDAmeritradeApi.Client
             await Send(request);
         }
 
+        public async Task SubscribeToLevelTwoQuoteDataAsync(BookType bookType, params string[] symbols)
+        {
+            var request = new Request()
+            {
+                service = $"{bookType}_BOOK",
+                command = "SUBS",
+                parameters = new Dictionary<string, string>()
+                {
+                    {"keys", string.Join(",",symbols)},
+                    {"fields", string.Join(",", Enumerable.Range(0, 3)) }
+                }
+            };
+
+            await Send(request);
+        }
+
         public async Task SubscribeToNewsHeadlinesAsync(params string[] symbols)
         {
             var request = new Request()
@@ -309,6 +313,7 @@ namespace TDAmeritradeApi.Client
         {
             if (clientWebSocket.State == WebSocketState.Closed || clientWebSocket.State == WebSocketState.None)
             {
+                //
                 await clientWebSocket.ConnectAsync(new Uri($"wss://{streamerInfo.streamerSocketUrl}/ws"), CancellationToken.None);
 
                 //Start Receiving
@@ -376,11 +381,13 @@ namespace TDAmeritradeApi.Client
 
                                 MarketData.AddQueuedData(MarketDataType.TimeSales, timesales);
                             }
-                            else if (data.service.Contains("STREAMER_SERVER"))
+                            else if (data.service.Contains("BOOK"))
                             {
-                                var news = ParseData(data, MarketStreamDataParser.ParseNewsData);
+                                var bookType = (BookType)Enum.Parse(typeof(BookType), data.service.Replace("_BOOK", ""));
 
-                                MarketData.AddQueuedData(MarketDataType.News, news);
+                                var book = ParseData(data, datum => MarketStreamDataParser.ParseBookData(bookType, datum));
+
+                                MarketData.AddQueuedData(MarketDataType.LevelTwoQuotes, book);
                             }
                         }
                     }
@@ -465,7 +472,7 @@ namespace TDAmeritradeApi.Client
                 jsonValue = JsonSerializer.Deserialize<T>(json, options);
                 return true;
             }
-            catch
+            catch(Exception ex)
             {
                 return false;
             }
@@ -508,7 +515,6 @@ namespace TDAmeritradeApi.Client
             };
 
             var body = JsonSerializer.Serialize(streamerRequest, options);
-
             var bytes = Encoding.UTF8.GetBytes(body);
             await clientWebSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, endOfMessage: true, cancellationToken: CancellationToken.None);
 

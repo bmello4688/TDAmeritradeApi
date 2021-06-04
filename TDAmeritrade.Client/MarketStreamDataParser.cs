@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Text.Json;
 using TDAmeritradeApi.Client.Models.MarketData;
 using TDAmeritradeApi.Client.Models.Streamer;
 
@@ -11,6 +12,7 @@ namespace TDAmeritradeApi.Client
     internal static class MarketStreamDataParser
     {
         private static Dictionary<QuoteType, Dictionary<int, (string, Type, Func<object, object>)>> quoteDefinitionMap = new Dictionary<QuoteType, Dictionary<int, (string, Type, Func<object, object>)>>();
+        private static JsonSerializerOptions jsonOptions = BaseApiClient.GetJsonSerializerOptions();
 
         static MarketStreamDataParser()
         {
@@ -365,6 +367,22 @@ namespace TDAmeritradeApi.Client
                 LastSequence = GetValue<long>(4, datum),
                 UniqueNumber = long.Parse(datum["seq"])
             });
+        }
+
+        internal static (string, QuoteBook) ParseBookData(BookType bookType, Dictionary<string, string> datum)
+        {
+            return (datum["key"], new QuoteBook()
+            {
+                Symbol = datum["key"],
+                BookTimeStamp = DateTimeOffset.FromUnixTimeMilliseconds(GetValue<long>(1, datum)),
+                Bids = ParseBookQuotes(GetValue<string>(2, datum)),
+                Asks = ParseBookQuotes(GetValue<string>(3, datum))
+            });
+        }
+
+        private static List<BookQuotes> ParseBookQuotes(string json)
+        {
+            return JsonSerializer.Deserialize<List<BookQuotes>>(json, jsonOptions);
         }
     }
 }

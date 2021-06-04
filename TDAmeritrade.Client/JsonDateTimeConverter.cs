@@ -66,4 +66,31 @@ namespace TDAmeritradeApi.Client
             writer.WriteStringValue(value.ToString("u"));
         }
     }
+
+    /// <summary>
+    /// Specific for quote books. May need to create a unique class for conversion
+    /// </summary>
+    internal class JsonTimeSpanConverter : JsonConverter<TimeSpan>
+    {
+        public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Assert(typeToConvert == typeof(TimeSpan));
+
+            if (reader.TokenType == JsonTokenType.Number)
+            {
+                var offset = TimeSpan.FromMilliseconds(reader.GetInt64());
+
+                offset.Add(TimeSpan.FromHours(1));
+
+                return offset;
+            }
+            else
+                throw new NotSupportedException(reader.GetString());
+        }
+
+        public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToString());
+        }
+    }
 }

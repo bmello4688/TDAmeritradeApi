@@ -5,6 +5,7 @@
         MostTraded,
         Charts,
         LevelOneQuotes,
+        LevelTwoQuotes,
         News,
         TimeSales
     }

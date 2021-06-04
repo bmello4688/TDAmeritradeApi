@@ -107,7 +107,13 @@ namespace TDClientTester
             while (client.LiveMarketDataStreamer.MarketData[MarketDataType.TimeSales].Count != 2)
                 Thread.Sleep(100);
 
-            //client.LiveMarketDataStreamer.StreamerAsync().Wait();
+            client.LiveMarketDataStreamer.SubscribeToLevelTwoQuoteDataAsync(BookType.NASDAQ, "MSFT", "AAPL").Wait();
+
+            if (trade != null)
+                client.LiveMarketDataStreamer.SubscribeToLevelTwoQuoteDataAsync(BookType.OPTIONS, trade.Symbol).Wait();
+
+            while (client.LiveMarketDataStreamer.MarketData[MarketDataType.LevelTwoQuotes].Count < 2)
+                Thread.Sleep(100);
 
             client.LiveMarketDataStreamer.LogoutAsync().Wait();
         }
