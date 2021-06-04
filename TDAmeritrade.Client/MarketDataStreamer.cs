@@ -387,7 +387,7 @@ namespace TDAmeritradeApi.Client
 
                                 var book = ParseData(data, datum => MarketStreamDataParser.ParseBookData(bookType, datum));
 
-                                MarketData.AddQueuedData(MarketDataType.LevelTwoQuotes, book);
+                                MarketData.AddInstanceData(MarketDataType.LevelTwoQuotes, book);
                             }
                         }
                     }
