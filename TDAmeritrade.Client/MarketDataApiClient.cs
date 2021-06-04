@@ -256,9 +256,9 @@ namespace TDAmeritradeApi.Client
             if (strikePriceToReturn.HasValue)
                 parameters.Add(new KeyValuePair<string, string>("strike", strikePriceToReturn.Value.ToString()));
             if (expirationsfromDate.HasValue)
-                parameters.Add(new KeyValuePair<string, string>("fromDate", expirationsfromDate.Value.ToString()));
+                parameters.Add(new KeyValuePair<string, string>("fromDate", expirationsfromDate.Value.ToString("yyyy-MM-dd")));
             if (expirationsToDate.HasValue)
-                parameters.Add(new KeyValuePair<string, string>("toDate", expirationsToDate.Value.ToString()));
+                parameters.Add(new KeyValuePair<string, string>("toDate", expirationsToDate.Value.ToString("yyyy-MM-dd")));
 
 
             if (strategy == OptionChainStrategy.ANALYTICAL)

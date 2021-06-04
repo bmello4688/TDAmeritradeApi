@@ -47,7 +47,7 @@ namespace TDClientTester
 
             client.LogIn(new CliCredentials()).Wait();
 
-            //TestMarketData(client);
+            TestMarketData(client);
 
             //TestAccounts(client);
 
@@ -57,7 +57,7 @@ namespace TDClientTester
 
             //TestUserAccountsAndPreferences(client);
 
-            TestStreamer(client);
+            //TestStreamer(client);
         }
 
         private static void TestStreamer(TDAmeritradeClient client)
@@ -219,7 +219,7 @@ namespace TDClientTester
 
             var single_hours = client.MarketDataApi.GetMarketHours(MarketType.EQUITY, DateTime.Today).Result;
 
-            var optionsChain = client.MarketDataApi.GetOptionChainAsync("SPY").Result;
+            var optionsChain = client.MarketDataApi.GetOptionChainAsync("SPY", expirationsfromDate:DateTime.Today, expirationsToDate: DateTime.Today).Result;
 
             var movers = client.MarketDataApi.GetTopMoversInIndexAsync(IndexName.SPX).Result;
 
