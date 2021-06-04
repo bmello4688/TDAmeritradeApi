@@ -6,7 +6,7 @@ namespace TDAmeritradeApi.Client
     /// <summary>
     /// Represents a REST client for interacting with the TD Ameritrade Trading Platform.
     /// </summary>
-    public class AmeritradeClient
+    public class TDAmeritradeClient
     {
         private string sessionID;
         private TimeSpan timeout;
@@ -31,12 +31,12 @@ namespace TDAmeritradeApi.Client
         public MarketDataStreamer LiveMarketDataStreamer => streamer;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AmeritradeClient"/> class.
+        /// Initializes a new instance of the <see cref="TDAmeritradeClient"/> class.
         /// </summary>
         /// <param name="clientID"></param>
         /// <param name="redirectURI"></param>
         /// <param name="savedTokenDirectoryPath "></param>
-        public AmeritradeClient(string clientID, string redirectURI, string savedTokenDirectoryPath =null)
+        public TDAmeritradeClient(string clientID, string redirectURI, string savedTokenDirectoryPath =null)
         {
             baseApiClient = new BaseApiClient(clientID, redirectURI, savedTokenDirectoryPath);
             accountsAndTradingApiClient = new AccountsAndTradingApiClient(baseApiClient);

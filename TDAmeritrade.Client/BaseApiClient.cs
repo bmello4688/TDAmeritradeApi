@@ -16,7 +16,7 @@ namespace TDAmeritradeApi.Client
         public string clientID;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AmeritradeClient"/> class.
+        /// Initializes a new instance of the <see cref="TDAmeritradeClient"/> class.
         /// </summary>
         /// <param name="clientID"></param>
         /// <param name="redirectURI"></param>

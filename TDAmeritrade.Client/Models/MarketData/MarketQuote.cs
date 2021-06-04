@@ -186,5 +186,10 @@ namespace TDAmeritradeApi.Client.Models.MarketData
         public string settlementType { get; set; }
         public DateTime? expirationDate { get; internal set; }
         public int? daysToExpiration { get; internal set; }
+        public int? expirationYear { get; internal set; }
+
+        public int? expirationMonth { get; internal set; }
+
+        public int? expirationDay { get; internal set; }
     }
 }

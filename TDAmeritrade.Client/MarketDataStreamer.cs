@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TDAmeritradeApi.Client.Models.AccountsAndTrading;
+using TDAmeritradeApi.Client.Models.MarketData;
 using TDAmeritradeApi.Client.Models.Streamer;
 
 namespace TDAmeritradeApi.Client
@@ -115,6 +116,18 @@ namespace TDAmeritradeApi.Client
                 {
                     {"qoslevel", ((int)qualityofServiceType).ToString() }
                 }
+            };
+
+            await Send(request);
+        }
+
+        public async Task StreamerAsync()
+        {
+            var request = new Request()
+            {
+                service = "STREAMER_SERVER",
+                command = "ADMIN",
+                //parameters = new Dictionary<string, string>()
             };
 
             await Send(request);
@@ -333,7 +346,19 @@ namespace TDAmeritradeApi.Client
                             {
                                 QuoteType quoteType = DetermineQuoteType(data.service);
 
-                                var quotes = ParseData(data, datum => MarketStreamDataParser.ParseQuoteData(quoteType, datum));
+                                var keys = data.content.Select(c => c["key"]);
+
+                                var existingQuotesList = MarketData[MarketDataType.LevelOneQuotes].Where(kvp => keys.Contains(kvp.Key)).Select(kvm =>
+                                {
+                                    var queue = (ConcurrentQueue<MarketQuote>)kvm.Value;
+
+                                    queue.TryPeek(out MarketQuote marketQuote);
+                                    return new KeyValuePair<string, MarketQuote>(kvm.Key, marketQuote);
+                                });
+
+                                Dictionary<string, MarketQuote> existingQuotes = new Dictionary<string, MarketQuote>(existingQuotesList);
+
+                                var quotes = ParseData(data, datum => MarketStreamDataParser.ParseQuoteData(quoteType, datum, existingQuotes));
 
                                 MarketData.AddQueuedData(MarketDataType.LevelOneQuotes, quotes);
                             }
@@ -350,6 +375,12 @@ namespace TDAmeritradeApi.Client
                                 var timesales = ParseData(data, datum => MarketStreamDataParser.ParseTimeSaleData(instrumentType, datum));
 
                                 MarketData.AddQueuedData(MarketDataType.TimeSales, timesales);
+                            }
+                            else if (data.service.Contains("STREAMER_SERVER"))
+                            {
+                                var news = ParseData(data, MarketStreamDataParser.ParseNewsData);
+
+                                MarketData.AddQueuedData(MarketDataType.News, news);
                             }
                         }
                     }
@@ -394,7 +425,7 @@ namespace TDAmeritradeApi.Client
 
         private async void StartReceivingMessages()
         {
-            var buffer = new byte[2048];
+            var buffer = new byte[1024000];
 
             while (!cancellationTokenSource.Token.IsCancellationRequested)
             {
@@ -405,10 +436,13 @@ namespace TDAmeritradeApi.Client
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
                         var responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                        var response = JsonSerializer.Deserialize<StreamerResponse>(responseJson, options);
-                        SaveResponse(response.response);
-                        SaveData(response.data);
-                        SaveData(response.snapshot);
+                        bool wasSuccess = TryToDeserialize(responseJson, options, out StreamerResponse response);
+                        if (wasSuccess)
+                        {
+                            SaveResponse(response.response);
+                            SaveData(response.data);
+                            SaveData(response.snapshot);
+                        }
                     }
                     else if (result.MessageType == WebSocketMessageType.Binary)
                     {
@@ -420,6 +454,20 @@ namespace TDAmeritradeApi.Client
                         cancellationTokenSource.Cancel();
                     }
                 }
+            }
+        }
+
+        private static bool TryToDeserialize<T>(string json, JsonSerializerOptions? options, out T? jsonValue)
+        {
+            jsonValue = default(T);
+            try
+            {
+                jsonValue = JsonSerializer.Deserialize<T>(json, options);
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 

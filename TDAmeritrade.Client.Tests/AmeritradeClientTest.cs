@@ -11,7 +11,7 @@ namespace TDAmeritradeApi.Client.Tests
         [TestMethod, TestCategory("Integration")]
         public async Task GetWatchlists_Returns_a_List_of_Watchlists()
         {
-            var client = new AmeritradeClient("EXAMPLE", "uri");
+            var client = new TDAmeritradeClient("EXAMPLE", "uri");
             var watchlist = await client.WatchListsApi.GetWatchListsForAllAccountsAsync();
             Assert.IsNotNull(watchlist);
             Assert.IsTrue(watchlist.Count > 0);

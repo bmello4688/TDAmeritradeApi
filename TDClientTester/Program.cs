@@ -43,7 +43,7 @@ namespace TDClientTester
             string clientID = "NRUYDIGLJYQRZBVKIDSGMHUXGGWAV9YO";
             string redirectURI = "http://localhost/callback";
 
-            var client = new AmeritradeClient(clientID, redirectURI);
+            var client = new TDAmeritradeClient(clientID, redirectURI);
 
             client.LogIn(new CliCredentials()).Wait();
 
@@ -60,7 +60,7 @@ namespace TDClientTester
             TestStreamer(client);
         }
 
-        private static void TestStreamer(AmeritradeClient client)
+        private static void TestStreamer(TDAmeritradeClient client)
         {
             client.LiveMarketDataStreamer.LoginAsync().Wait();
 
@@ -102,15 +102,17 @@ namespace TDClientTester
             while (client.LiveMarketDataStreamer.MarketData[MarketDataType.News].Count != 2)
                 Thread.Sleep(100);
 
-            //client.LiveMarketDataStreamer.SubscribeToTimeSaleAsync(InstrumentType.EQUITY, "MSFT", "AAPL").Wait();
+            client.LiveMarketDataStreamer.SubscribeToTimeSaleAsync(InstrumentType.EQUITY, "MSFT", "AAPL").Wait();
 
-            //while (client.LiveMarketDataStreamer.MarketData[MarketDataType.TimeSales].Count != 2)
-            //    Thread.Sleep(100);
+            while (client.LiveMarketDataStreamer.MarketData[MarketDataType.TimeSales].Count != 2)
+                Thread.Sleep(100);
+
+            //client.LiveMarketDataStreamer.StreamerAsync().Wait();
 
             client.LiveMarketDataStreamer.LogoutAsync().Wait();
         }
 
-        private static void TestUserAccountsAndPreferences(AmeritradeClient client)
+        private static void TestUserAccountsAndPreferences(TDAmeritradeClient client)
         {
             var accounts = client.AccountsAndTradingApi.GetAllAccountsAsync().Result;
 
@@ -127,7 +129,7 @@ namespace TDClientTester
             var keys = client.UserAccountsAndPreferencesApiClient.GetStreamerSubscriptionKeysAsync(accountID).Result;
         }
 
-        private static void TestWatchlistApi(AmeritradeClient client)
+        private static void TestWatchlistApi(TDAmeritradeClient client)
         {
             var accounts = client.AccountsAndTradingApi.GetAllAccountsAsync().Result;
 
@@ -190,7 +192,7 @@ namespace TDClientTester
             client.WatchListsApi.DeleteWatchListAsync(accountID, idToModify).Wait();
         }
 
-        private static void TestInstrumentData(AmeritradeClient client)
+        private static void TestInstrumentData(TDAmeritradeClient client)
         {
             var info = client.InstrumentApi.SearchForInstrumentDataAsync(ProjectionType.symbol_search, "LMND").Result;
             var info1 = client.InstrumentApi.SearchForInstrumentDataAsync(ProjectionType.symbol_regex, "L.*").Result;
@@ -201,7 +203,7 @@ namespace TDClientTester
             var s = client.InstrumentApi.GetInstrumentDataAsync("52567D107").Result;
         }
 
-        private static void TestMarketData(AmeritradeClient client)
+        private static void TestMarketData(TDAmeritradeClient client)
         {
             var quote = client.MarketDataApi.GetQuote("MSFT").Result;
 
@@ -220,7 +222,7 @@ namespace TDClientTester
             var history1 = client.MarketDataApi.GetPriceHistoryAsync("SPY", PeriodType.day, null, null, null, DateTime.Today.AddDays(-5)).Result;
         }
 
-        private static void TestAccounts(AmeritradeClient client)
+        private static void TestAccounts(TDAmeritradeClient client)
         {
             var accounts = client.AccountsAndTradingApi.GetAllAccountsAsync().Result;
 
