@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace TDAmeritradeApi.Client.Models.Streamer
 {
     public class SubscribedMarketData
     {
         private readonly ConcurrentDictionary<MarketDataType, ConcurrentDictionary<string, dynamic>> marketDataDictionary = new ConcurrentDictionary<MarketDataType, ConcurrentDictionary<string, dynamic>>();
+
+        public event EventHandler<MarketDataType> DataChanged;
 
         public ConcurrentDictionary<string, dynamic> this[MarketDataType marketDataType]
         {
@@ -34,6 +37,8 @@ namespace TDAmeritradeApi.Client.Models.Streamer
                 else
                     marketDataDictionary[marketDataType][instance.Key] = instance.Value;
             }
+
+            Task.Run(() => DataChanged?.Invoke(this, marketDataType));
         }
 
         internal void AddQueuedData<T>(MarketDataType marketDataType, List<KeyValuePair<string, T>> items)
@@ -45,6 +50,8 @@ namespace TDAmeritradeApi.Client.Models.Streamer
                 
                 marketDataDictionary[marketDataType][item.Key].Enqueue(item.Value);
             }
+
+            Task.Run(() => DataChanged?.Invoke(this, marketDataType));
         }
     }
 }
