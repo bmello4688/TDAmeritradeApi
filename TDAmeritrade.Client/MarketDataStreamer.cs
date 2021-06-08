@@ -367,7 +367,7 @@ namespace TDAmeritradeApi.Client
 
                                 var existingQuotesList = MarketData[MarketDataType.LevelOneQuotes].Where(kvp => keys.Contains(kvp.Key)).Select(kvm =>
                                 {
-                                    var queue = (ConcurrentQueue<MarketQuote>)kvm.Value.Data;
+                                    var queue = (ConcurrentQueue<MarketQuote>)kvm.Value;
 
                                     queue.TryPeek(out MarketQuote marketQuote);
                                     return new KeyValuePair<string, MarketQuote>(kvm.Key, marketQuote);
