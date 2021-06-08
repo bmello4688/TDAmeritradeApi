@@ -3,13 +3,15 @@ using System.Text.Json.Serialization;
 
 namespace TDAmeritradeApi.Client.Models.MarketData
 {
-    public class MarketQuote
+    public abstract class MarketQuote
     {
         public string symbol { get; set; }
         public string description { get; set; }
         public string exchange { get; set; }
         public string exchangeName { get; set; }
         public SecurityStatus securityStatus { get; set; }
+
+        public abstract DateTime Timestamp { get; }
     }
 
     public class MutualFundMarketQuote : MarketQuote
@@ -28,6 +30,8 @@ namespace TDAmeritradeApi.Client.Models.MarketData
         public decimal divAmount { get; set; }
         public decimal divYield { get; set; }
         public string divDate { get; set; }
+
+        public override DateTime Timestamp => tradeTimeInLong.DateTime;
     }
 
 
@@ -46,6 +50,8 @@ namespace TDAmeritradeApi.Client.Models.MarketData
         public decimal _52WkHigh { get; set; }
         [JsonPropertyName("52WkLow")]
         public decimal _52WkLow { get; set; }
+
+        public override DateTime Timestamp => tradeTimeInLong;
     }
 
 
@@ -72,6 +78,8 @@ namespace TDAmeritradeApi.Client.Models.MarketData
         public decimal regularMarketLastSize { get; set; }
         public decimal regularMarketNetChange { get; set; }
         public DateTimeOffset regularMarketTradeTimeInLong { get; set; }
+
+        public override DateTime Timestamp => quoteTimeInLong.DateTime;
     }
 
 
@@ -87,6 +95,8 @@ namespace TDAmeritradeApi.Client.Models.MarketData
         public decimal mark { get; set; }
         public decimal tick { get; set; }
         public decimal tickAmount { get; set; }
+
+        public override DateTime Timestamp => DateTime.UtcNow;
     }
 
     public abstract class BaseFutureMarketQuote : BaseFutureAndForexMarketQuote
@@ -191,5 +201,7 @@ namespace TDAmeritradeApi.Client.Models.MarketData
         public int? expirationMonth { get; internal set; }
 
         public int? expirationDay { get; internal set; }
+
+        public override DateTime Timestamp => quoteTimeInLong.DateTime;
     }
 }

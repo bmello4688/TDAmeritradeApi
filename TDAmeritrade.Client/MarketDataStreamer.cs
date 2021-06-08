@@ -367,13 +367,13 @@ namespace TDAmeritradeApi.Client
 
                                 var existingQuotesList = MarketData[MarketDataType.LevelOneQuotes].Where(kvp => keys.Contains(kvp.Key)).Select(kvm =>
                                 {
-                                    var queue = (ConcurrentQueue<MarketQuote>)kvm.Value;
+                                    var queue = (ConcurrentQueue<LevelOneQuote>)kvm.Value;
 
-                                    queue.TryPeek(out MarketQuote marketQuote);
-                                    return new KeyValuePair<string, MarketQuote>(kvm.Key, marketQuote);
+                                    queue.TryPeek(out LevelOneQuote marketQuote);
+                                    return new KeyValuePair<string, LevelOneQuote>(kvm.Key, marketQuote);
                                 });
 
-                                Dictionary<string, MarketQuote> existingQuotes = new Dictionary<string, MarketQuote>(existingQuotesList);
+                                Dictionary<string, LevelOneQuote> existingQuotes = new Dictionary<string, LevelOneQuote>(existingQuotesList);
 
                                 var quotes = ParseData(data, datum => MarketStreamDataParser.ParseQuoteData(quoteType, datum, existingQuotes));
 

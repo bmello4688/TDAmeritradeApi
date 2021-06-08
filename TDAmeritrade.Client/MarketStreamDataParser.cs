@@ -21,65 +21,65 @@ namespace TDAmeritradeApi.Client
 
         public static void GenerateQuoteDefinitionLookup()
         {
-            var marketQuote = new EquityMarketQuote();
+            var marketQuote = new EquityLevelOneQuote();
 
             Dictionary<int, (string, Type, Func<object, object>)> equityQuoteDefinitionLookup = new Dictionary<int, (string, Type, Func<object, object>)>()
             {
-                {1, (nameof(marketQuote.bidPrice), typeof(float), null) },
-                {2, (nameof(marketQuote.askPrice), typeof(float), null) },
-                {3, (nameof(marketQuote.lastPrice), typeof(float), null) },
-                {4, (nameof(marketQuote.bidSize), typeof(float), null) },
-                {5, (nameof(marketQuote.askSize), typeof(float), null) },
-                {8, (nameof(marketQuote.totalVolume), typeof(decimal), null) },
-                {48, (nameof(marketQuote.securityStatus), typeof(SecurityStatus), null) },
-                {49, (nameof(marketQuote.mark), typeof(decimal), null) },
-                {50, (nameof(marketQuote.tradeTimeInLong), typeof(long), ConvertToDateTimeOffset) },
-                {51, (nameof(marketQuote.quoteTimeInLong), typeof(long), ConvertToDateTimeOffset) },
-                {52, (nameof(marketQuote.regularMarketTradeTimeInLong), typeof(long), ConvertToDateTimeOffset) }
+                {1, (nameof(marketQuote.BidPrice), typeof(float), null) },
+                {2, (nameof(marketQuote.AskPrice), typeof(float), null) },
+                {3, (nameof(marketQuote.LastPrice), typeof(float), null) },
+                {4, (nameof(marketQuote.BidSize), typeof(float), null) },
+                {5, (nameof(marketQuote.AskSize), typeof(float), null) },
+                {8, (nameof(marketQuote.TotalVolume), typeof(long), null) },
+                {48, (nameof(marketQuote.SecurityStatus), typeof(SecurityStatus), null) },
+                {49, (nameof(marketQuote.Mark), typeof(float), null) },
+                {50, (nameof(marketQuote.TradeTime), typeof(long), ConvertToDateTimeOffset) },
+                {51, (nameof(marketQuote.QuoteTime), typeof(long), ConvertToDateTimeOffset) },
+                {52, (nameof(marketQuote.RegularMarketTradeTime), typeof(long), ConvertToDateTimeOffset) }
             };
 
             quoteDefinitionMap.Add(QuoteType.Equity, equityQuoteDefinitionLookup);
 
-            var optionMarketQuote = new OptionMarketQuote();
+            var optionMarketQuote = new OptionLevelOneQuote();
 
             Dictionary<int, (string, Type, Func<object, object>)> optionQuoteDefinitionLookup = new Dictionary<int, (string, Type, Func<object, object>)>()
             {
-                {1, (nameof(optionMarketQuote.description), typeof(string), null) },
-                {2, (nameof(optionMarketQuote.bidPrice), typeof(float), null) },
-                {3, (nameof(optionMarketQuote.askPrice), typeof(float), null) },
-                {4, (nameof(optionMarketQuote.lastPrice), typeof(float), null) },
-                {8, (nameof(optionMarketQuote.totalVolume), typeof(long), null) },
-                {9, (nameof(optionMarketQuote.openInterest), typeof(long), null) },
-                {10, (nameof(optionMarketQuote.volatility), typeof(float), null) },
-                {11, (nameof(optionMarketQuote.tradeTimeInLong), typeof(long), ConvertToDateTimeOffset) },
-                {12, (nameof(optionMarketQuote.quoteTimeInLong), typeof(long), ConvertToDateTimeOffset) },
-                {13, (nameof(optionMarketQuote.moneyIntrinsicValue), typeof(decimal), null) },
-                {16, (nameof(optionMarketQuote.expirationYear), typeof(int), null) },
-                {17, (nameof(optionMarketQuote.multiplier), typeof(float), null) },
-                {20, (nameof(optionMarketQuote.bidSize), typeof(float), null) },
-                {21, (nameof(optionMarketQuote.askSize), typeof(float), null) },
-                {22, (nameof(optionMarketQuote.lastSize), typeof(float), null) },
-                {23, (nameof(optionMarketQuote.netChange), typeof(float), null) },
-                {24, (nameof(optionMarketQuote.strikePrice), typeof(float), null) },
-                {25, (nameof(optionMarketQuote.contractType), typeof(char), null) },
-                {26, (nameof(optionMarketQuote.underlying), typeof(string), null) },
-                {27, (nameof(optionMarketQuote.expirationMonth), typeof(int), null) },
-                {28, (nameof(optionMarketQuote.deliverables), typeof(string), null) },
-                {29, (nameof(optionMarketQuote.timeValue), typeof(float), null) },
-                {30, (nameof(optionMarketQuote.expirationDay), typeof(int), null) },
+                {1, (nameof(optionMarketQuote.Description), typeof(string), null) },
+                {2, (nameof(optionMarketQuote.BidPrice), typeof(float), null) },
+                {3, (nameof(optionMarketQuote.AskPrice), typeof(float), null) },
+                {4, (nameof(optionMarketQuote.LastPrice), typeof(float), null) },
+                {8, (nameof(optionMarketQuote.TotalVolume), typeof(long), null) },
+                {9, (nameof(optionMarketQuote.OpenInterest), typeof(long), null) },
+                {10, (nameof(optionMarketQuote.Volatility), typeof(float), null) },
+                {11, (nameof(optionMarketQuote.TradeTime), typeof(long), ConvertToDateTimeOffset) },
+                {12, (nameof(optionMarketQuote.QuoteTime), typeof(long), ConvertToDateTimeOffset) },
+                {13, (nameof(optionMarketQuote.MoneyIntrinsicValue), typeof(float), null) },
+                {16, (nameof(optionMarketQuote.ExpirationYear), typeof(int), null) },
+                {17, (nameof(optionMarketQuote.Multiplier), typeof(float), null) },
+                {20, (nameof(optionMarketQuote.BidSize), typeof(float), null) },
+                {21, (nameof(optionMarketQuote.AskSize), typeof(float), null) },
+                {22, (nameof(optionMarketQuote.LastSize), typeof(float), null) },
+                {23, (nameof(optionMarketQuote.NetChange), typeof(float), null) },
+                {24, (nameof(optionMarketQuote.StrikePrice), typeof(float), null) },
+                {25, (nameof(optionMarketQuote.ContractType), typeof(char), null) },
+                {26, (nameof(optionMarketQuote.Underlying), typeof(string), null) },
+                {27, (nameof(optionMarketQuote.ExpirationMonth), typeof(int), null) },
+                {28, (nameof(optionMarketQuote.Deliverables), typeof(string), null) },
+                {29, (nameof(optionMarketQuote.TimeValue), typeof(float), null) },
+                {30, (nameof(optionMarketQuote.ExpirationDay), typeof(int), null) },
 
-                {31, (nameof(optionMarketQuote.daysToExpiration), typeof(int), null) },
-                {32, (nameof(optionMarketQuote.delta), typeof(float), null) },
-                {33, (nameof(optionMarketQuote.gamma), typeof(float), null) },
-                {34, (nameof(optionMarketQuote.theta), typeof(float), null) },
-                {35, (nameof(optionMarketQuote.vega), typeof(float), null) },
-                {36, (nameof(optionMarketQuote.rho), typeof(float), null) },
-                {37, (nameof(optionMarketQuote.securityStatus), typeof(SecurityStatus), null) },
-                {38, (nameof(optionMarketQuote.theoreticalOptionValue), typeof(decimal), null) },
-                {39, (nameof(optionMarketQuote.underlyingPrice), typeof(decimal), null) },
-                {40, (nameof(optionMarketQuote.uvExpirationType), typeof(char), null) },
+                {31, (nameof(optionMarketQuote.DaysToExpiration), typeof(int), null) },
+                {32, (nameof(optionMarketQuote.Delta), typeof(float), null) },
+                {33, (nameof(optionMarketQuote.Gamma), typeof(float), null) },
+                {34, (nameof(optionMarketQuote.Theta), typeof(float), null) },
+                {35, (nameof(optionMarketQuote.Vega), typeof(float), null) },
+                {36, (nameof(optionMarketQuote.Rho), typeof(float), null) },
+                {37, (nameof(optionMarketQuote.SecurityStatus), typeof(SecurityStatus), null) },
+                {38, (nameof(optionMarketQuote.TheoreticalOptionValue), typeof(float), null) },
+                {39, (nameof(optionMarketQuote.UnderlyingPrice), typeof(decimal), null) },
+                {40, (nameof(optionMarketQuote.UVExpirationType), typeof(char), null) },
 
-                {41, (nameof(optionMarketQuote.mark), typeof(decimal), null) },
+                {41, (nameof(optionMarketQuote.Mark), typeof(float), null) },
             };
 
             quoteDefinitionMap.Add(QuoteType.Option, optionQuoteDefinitionLookup);
@@ -211,10 +211,10 @@ namespace TDAmeritradeApi.Client
             return (chartData != null ? chartData.Symbol : null, chartData);
         }
 
-        internal static (string, MarketQuote) ParseQuoteData(QuoteType quoteType, Dictionary<string, string> datum, Dictionary<string, MarketQuote> existingQuotes)
+        internal static (string, LevelOneQuote) ParseQuoteData(QuoteType quoteType, Dictionary<string, string> datum, Dictionary<string, LevelOneQuote> existingQuotes)
         {
             var symbol = datum["key"];
-            MarketQuote quote = null;
+            LevelOneQuote quote = null;
             if(existingQuotes.ContainsKey(symbol))
                 quote = existingQuotes[symbol];
 
@@ -222,11 +222,11 @@ namespace TDAmeritradeApi.Client
             switch (quoteType)
             {
                 case QuoteType.Equity:
-                    quote = CreateQuote<EquityMarketQuote>(symbol, quote);
+                    quote = CreateQuote<EquityLevelOneQuote>(symbol, quote);
                     quoteDefinitionLookup = quoteDefinitionMap[QuoteType.Equity];
                     break;
                 case QuoteType.Option:
-                    quote = CreateQuote<OptionMarketQuote>(symbol, quote);
+                    quote = CreateQuote<OptionLevelOneQuote>(symbol, quote);
                     quoteDefinitionLookup = quoteDefinitionMap[QuoteType.Option];
                     break;
                 //case QuoteType.Futures:
@@ -242,7 +242,7 @@ namespace TDAmeritradeApi.Client
 
             UpdateQuote(datum, quote, quoteDefinitionLookup);
 
-            return (quote != null ? quote.symbol : null, quote);
+            return (quote != null ? quote.Symbol : null, quote);
         }
 
         private static MarketQuote GetOptionQuote(Dictionary<string, string> datum)
@@ -286,14 +286,14 @@ namespace TDAmeritradeApi.Client
             };
         }
 
-        private static T CreateQuote<T>(string symbol, MarketQuote quote =null)
-            where T: MarketQuote, new()
+        private static T CreateQuote<T>(string symbol, LevelOneQuote quote =null)
+            where T: LevelOneQuote, new()
         {
             T marketQuote;
             if (quote == null)
                 marketQuote = new T()
                 {
-                    symbol = symbol
+                    Symbol = symbol
                 };
             else
                 marketQuote = quote as T;
@@ -301,7 +301,7 @@ namespace TDAmeritradeApi.Client
             return marketQuote;
         }
 
-        private static void UpdateQuote(Dictionary<string, string> datum, MarketQuote quote, Dictionary<int, (string, Type, Func<object, object>)> quoteDefinitionLookup)
+        private static void UpdateQuote(Dictionary<string, string> datum, LevelOneQuote quote, Dictionary<int, (string, Type, Func<object, object>)> quoteDefinitionLookup)
         {
             foreach (var item in datum)
             {
