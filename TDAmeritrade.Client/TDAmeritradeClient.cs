@@ -8,8 +8,6 @@ namespace TDAmeritradeApi.Client
     /// </summary>
     public class TDAmeritradeClient
     {
-        private string sessionID;
-        private TimeSpan timeout;
         private readonly BaseApiClient baseApiClient;
         private readonly AccountsAndTradingApiClient accountsAndTradingApiClient;
         private readonly MarketDataApiClient marketDataApiClient;

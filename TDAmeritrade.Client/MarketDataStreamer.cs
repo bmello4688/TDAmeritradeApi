@@ -36,6 +36,8 @@ namespace TDAmeritradeApi.Client
 
         public SubscribedMarketData MarketData { get; } = new SubscribedMarketData();
 
+        public bool IsConnected { get => clientWebSocket.State == WebSocketState.Open; }
+
         public MarketDataStreamer(string clientID, UserAccountsAndPreferencesApiClient userAccountsAndPreferencesApiClient)
         {
             this.clientID = clientID;
