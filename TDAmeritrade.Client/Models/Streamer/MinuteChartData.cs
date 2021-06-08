@@ -2,7 +2,7 @@
 
 namespace TDAmeritradeApi.Client.Models.Streamer
 {
-    public class ChartData
+    public class MinuteChartData
     {
         public string Symbol { get; internal set; }
         public double OpenPrice { get; internal set; }
@@ -15,5 +15,6 @@ namespace TDAmeritradeApi.Client.Models.Streamer
         public double Volume { get; internal set; }
 
         public DateTime ChartTime { get; internal set; }
+        public InstrumentType Type { get; internal set; }
     }
 }

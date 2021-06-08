@@ -47,7 +47,7 @@ namespace TDClientTester
 
             client.LogIn(new CliCredentials()).Wait();
 
-            TestMarketData(client);
+            //TestMarketData(client);
 
             //TestAccounts(client);
 
@@ -57,7 +57,7 @@ namespace TDClientTester
 
             //TestUserAccountsAndPreferences(client);
 
-            //TestStreamer(client);
+            TestStreamer(client);
         }
 
         private static void TestStreamer(TDAmeritradeClient client)
@@ -75,16 +75,13 @@ namespace TDClientTester
             while (client.LiveMarketDataStreamer.MarketData[MarketDataType.MostTraded].Count != 3)
                 Thread.Sleep(100);
 
-            client.LiveMarketDataStreamer.SubscribeToMinuteChartDataAsync(InstrumentType.EQUITY, "MSFT", "AAPL").Wait();
+            client.LiveMarketDataStreamer.SubscribeToMinuteChartDataAsync(true, "MSFT", "AAPL").Wait();
 
             var optionsSubscription = client.LiveMarketDataStreamer.MarketData[MarketDataType.MostTraded]
                 .First(x => x.Key.Contains("OPTS")).Value;
 
             //null on market close days
-            var trade = optionsSubscription?.Entries[0].Trades[0];
-
-            //Option not working
-            //client.LiveMarketDataStreamer.SubscribeToMinuteChartDataAsync(ChartType.OPTIONS, trade.Symbol).Wait();
+            var trade = optionsSubscription.Data?.Entries[0].Trades[0];
 
             while (client.LiveMarketDataStreamer.MarketData[MarketDataType.Charts].Count != 2)
                 Thread.Sleep(100);
@@ -219,7 +216,7 @@ namespace TDClientTester
 
             var single_hours = client.MarketDataApi.GetMarketHours(MarketType.EQUITY, DateTime.Today).Result;
 
-            var optionsChain = client.MarketDataApi.GetOptionChainAsync("SPY", expirationsfromDate:DateTime.Today, expirationsToDate: DateTime.Today).Result;
+            var optionsChain = client.MarketDataApi.GetOptionChainAsync("SPY", expirationsfromDate:DateTime.Today, expirationsToDate: DateTime.Today.AddDays(7)).Result;
 
             var movers = client.MarketDataApi.GetTopMoversInIndexAsync(IndexName.SPX).Result;
 

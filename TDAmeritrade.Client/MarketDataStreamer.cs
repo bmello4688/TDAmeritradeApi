@@ -147,8 +147,20 @@ namespace TDAmeritradeApi.Client
             await Send(request);
         }
 
-        public async Task SubscribeToMinuteChartDataAsync(InstrumentType chartType, params string[] symbols)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="isEquity">is equity or future</param>
+        /// <param name="symbols"></param>
+        /// <returns></returns>
+        public async Task SubscribeToMinuteChartDataAsync(bool isEquity, params string[] symbols)
         {
+            InstrumentType chartType;
+            if (isEquity)
+                chartType = InstrumentType.EQUITY;
+            else
+                chartType = InstrumentType.FUTURES;
+
             var request = new Request()
             {
                 service = $"CHART_{chartType}",
@@ -355,7 +367,7 @@ namespace TDAmeritradeApi.Client
 
                                 var existingQuotesList = MarketData[MarketDataType.LevelOneQuotes].Where(kvp => keys.Contains(kvp.Key)).Select(kvm =>
                                 {
-                                    var queue = (ConcurrentQueue<MarketQuote>)kvm.Value;
+                                    var queue = (ConcurrentQueue<MarketQuote>)kvm.Value.Data;
 
                                     queue.TryPeek(out MarketQuote marketQuote);
                                     return new KeyValuePair<string, MarketQuote>(kvm.Key, marketQuote);

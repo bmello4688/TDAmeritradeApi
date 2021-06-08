@@ -174,13 +174,14 @@ namespace TDAmeritradeApi.Client
                 return "Most Active Stocks based on “# of Shares” traded";
         }
 
-        internal static (string, ChartData) ParseChartData(InstrumentType chartType, Dictionary<string, string> datum)
+        internal static (string, MinuteChartData) ParseChartData(InstrumentType chartType, Dictionary<string, string> datum)
         {
-            ChartData chartData;
+            MinuteChartData chartData;
             if (chartType == InstrumentType.EQUITY)
             {
-                chartData = new ChartData()
+                chartData = new MinuteChartData()
                 {
+                    Type = chartType,
                     Symbol = datum["key"],
                     OpenPrice = double.Parse(datum["1"]),
                     HighPrice = double.Parse(datum["2"]),
@@ -190,10 +191,11 @@ namespace TDAmeritradeApi.Client
                     ChartTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(datum["7"])).UtcDateTime,
                 };
             }
-            else if (chartType == InstrumentType.FUTURES || chartType == InstrumentType.OPTIONS)
+            else if (chartType == InstrumentType.FUTURES)
             {
-                chartData = new ChartData()
+                chartData = new MinuteChartData()
                 {
+                    Type = chartType,
                     Symbol = datum["key"],
                     OpenPrice = double.Parse(datum["2"]),
                     HighPrice = double.Parse(datum["3"]),
