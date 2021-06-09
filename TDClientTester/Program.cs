@@ -54,15 +54,15 @@ namespace TDClientTester
 
             client.LogIn(new CliCredentials()).Wait();
 
-            //TestMarketData(client);
+            TestMarketData(client);
 
-            //TestAccounts(client);
+            TestAccounts(client);
 
-            //TestInstrumentData(client);
+            TestInstrumentData(client);
 
-            //TestWatchlistApi(client);
+            TestWatchlistApi(client);
 
-            //TestUserAccountsAndPreferences(client);
+            TestUserAccountsAndPreferences(client);
 
             TestStreamer(client);
         }
