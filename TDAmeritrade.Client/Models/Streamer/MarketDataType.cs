@@ -7,6 +7,7 @@
         LevelOneQuotes,
         LevelTwoQuotes,
         News,
-        TimeSales
+        TimeSales,
+        AccountActivity
     }
 }

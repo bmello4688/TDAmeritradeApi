@@ -30,7 +30,7 @@ namespace TDAmeritradeApi.Client
         private ConcurrentDictionary<string, Response> responseDictionary = new ConcurrentDictionary<string, Response>();
         private ConcurrentQueue<DataResponse> subscribedDataQueue = new ConcurrentQueue<DataResponse>();
         private string accountID;
-
+        private string messageApiKey;
         private static readonly char[] ValidTimePeriod = new char[] { 'd', 'w', 'n', 'y' };
         private static readonly string[] QuoteServiceNames = new string[] { "QUOTE", "OPTION", "LEVELONE_FUTURES", "LEVELONE_FOREX", "LEVELONE_FUTURES_OPTIONS" };
 
@@ -49,6 +49,8 @@ namespace TDAmeritradeApi.Client
             var userPrincipal = await userAccountsAndPreferencesApiClient.GetUserPrincipalsAsync();
 
             var streamerInfo = userPrincipal.streamerInfo;
+
+            messageApiKey = userPrincipal.streamerSubscriptionKeys.keys[0].key;
 
             if (selectedAccountID == null)
                 accountID = userPrincipal.primaryAccountId;
@@ -303,6 +305,22 @@ namespace TDAmeritradeApi.Client
             await Send(request);
         }
 
+        public async Task SubscribeToAccountActivityAsync()
+        {
+            var request = new Request()
+            {
+                service = "ACCT_ACTIVITY",
+                command = "SUBS",
+                parameters = new Dictionary<string, string>()
+                {
+                    {"keys", messageApiKey },
+                    {"fields", string.Join(",", Enumerable.Range(0, 4)) }
+                }
+            };
+
+            await Send(request);
+        }
+
         public async Task UnsubscribeAsync(StreamerDataService serviceName)
         {
             var request = new Request()
@@ -403,6 +421,12 @@ namespace TDAmeritradeApi.Client
 
                                 MarketData.AddInstanceData(MarketDataType.LevelTwoQuotes, book);
                             }
+                            else if (data.service == StreamerDataService.ACCT_ACTIVITY.ToString())
+                            {
+                                var activity = ParseData(data, datum => MarketStreamDataParser.ParseAccountActivityData(datum));
+
+                                MarketData.AddInstanceData(MarketDataType.AccountActivity, activity);
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -421,7 +445,8 @@ namespace TDAmeritradeApi.Client
             {
                 (string key, T content) = ParseDatumItem(datum);
 
-                data.Add(new KeyValuePair<string, T>(key, content));
+                if(!string.IsNullOrWhiteSpace(key))
+                    data.Add(new KeyValuePair<string, T>(key, content));
             }
 
             return data;

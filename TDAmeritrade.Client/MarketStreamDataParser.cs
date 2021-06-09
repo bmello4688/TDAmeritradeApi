@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Xml.Serialization;
 using TDAmeritradeApi.Client.Models.MarketData;
 using TDAmeritradeApi.Client.Models.Streamer;
+using TDAmeritradeApi.Client.Models.Streamer.AccountActivityModels;
 
 namespace TDAmeritradeApi.Client
 {
@@ -380,6 +383,74 @@ namespace TDAmeritradeApi.Client
                 Bids = ParseBookQuotes(GetValue<string>(2, datum)),
                 Asks = ParseBookQuotes(GetValue<string>(3, datum))
             });
+        }
+
+        internal static (string, AccountActivity) ParseAccountActivityData(Dictionary<string, string> datum)
+        {
+            var messageType = GetValue<AccountActivityMessageType>(2, datum);
+
+            string accountNumber = GetValue<string>(1, datum);
+
+            AccountActivity activity;
+            if (messageType == AccountActivityMessageType.Subscribed)
+                activity = null;
+            else
+                activity = new AccountActivity()
+                {
+                    AccountNumber = accountNumber,
+                    Data = ParseAccountActivityMessage(messageType, GetValue<string>(3, datum))
+                };
+
+
+            return (accountNumber, activity);
+        }
+
+        private static dynamic ParseAccountActivityMessage(AccountActivityMessageType messageType, string xmlResponse)
+        {
+            dynamic message = null;
+            var stringReader = new StringReader(xmlResponse);
+            switch (messageType)
+            {
+                case AccountActivityMessageType.Error:
+                    throw new Exception(xmlResponse);
+                case AccountActivityMessageType.Subscribed:
+                    break;
+                case AccountActivityMessageType.BrokenTrade:
+                    message = new XmlSerializer(typeof(BrokenTradeMessage)).Deserialize(stringReader) as BrokenTradeMessage;
+                    break;
+                case AccountActivityMessageType.ManualExecution:
+                    message = new XmlSerializer(typeof(ManualExecutionMessage)).Deserialize(stringReader) as ManualExecutionMessage;
+                    break;
+                case AccountActivityMessageType.OrderActivation:
+                    message = new XmlSerializer(typeof(OrderActivationMessage)).Deserialize(stringReader) as OrderActivationMessage;
+                    break;
+                case AccountActivityMessageType.OrderCancelReplaceRequest:
+                    message = new XmlSerializer(typeof(OrderCancelReplaceRequestMessage)).Deserialize(stringReader) as OrderCancelReplaceRequestMessage;
+                    break;
+                case AccountActivityMessageType.OrderCancelRequest:
+                    message = new XmlSerializer(typeof(OrderCancelRequestMessage)).Deserialize(stringReader) as OrderCancelRequestMessage;
+                    break;
+                case AccountActivityMessageType.OrderEntryRequest:
+                    message = new XmlSerializer(typeof(OrderEntryRequestMessage)).Deserialize(stringReader) as OrderEntryRequestMessage;
+                    break;
+                case AccountActivityMessageType.OrderFill:
+                    message = new XmlSerializer(typeof(OrderFillMessage)).Deserialize(stringReader) as OrderFillMessage;
+                    break;
+                case AccountActivityMessageType.OrderPartialFill:
+                    message = new XmlSerializer(typeof(OrderPartialFillMessage)).Deserialize(stringReader) as OrderPartialFillMessage;
+                    break;
+                case AccountActivityMessageType.OrderRejection:
+                    message = new XmlSerializer(typeof(OrderRejectionMessage)).Deserialize(stringReader) as OrderRejectionMessage;
+                    break;
+                case AccountActivityMessageType.TooLateToCancel:
+                    message = new XmlSerializer(typeof(TooLateToCancelMessage)).Deserialize(stringReader) as TooLateToCancelMessage;
+                    break;
+                case AccountActivityMessageType.UROUT:
+                    message = new XmlSerializer(typeof(UROUTMessage)).Deserialize(stringReader) as UROUTMessage;
+                    break;
+            }
+
+            return message;
         }
 
         private static List<BookQuotes> ParseBookQuotes(string json)

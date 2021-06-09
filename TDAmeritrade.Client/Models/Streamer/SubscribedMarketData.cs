@@ -38,7 +38,8 @@ namespace TDAmeritradeApi.Client.Models.Streamer
                     marketDataDictionary[marketDataType][instance.Key] = instance.Value;
             }
 
-            Task.Run(() => DataReceived?.Invoke(this, marketDataType));
+            if(instances.Count > 0)
+                Task.Run(() => DataReceived?.Invoke(this, marketDataType));
         }
 
         internal void AddQueuedData<T>(MarketDataType marketDataType, List<KeyValuePair<string, T>> items)
@@ -51,7 +52,8 @@ namespace TDAmeritradeApi.Client.Models.Streamer
                 marketDataDictionary[marketDataType][item.Key].Enqueue(item.Value);
             }
 
-            Task.Run(() => DataReceived?.Invoke(this, marketDataType));
+            if (items.Count > 0)
+                Task.Run(() => DataReceived?.Invoke(this, marketDataType));
         }
     }
 }
