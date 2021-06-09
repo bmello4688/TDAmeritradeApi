@@ -1,4 +1,6 @@
-﻿namespace TDAmeritradeApi.Client.Models.AccountsAndTrading
+﻿using System;
+
+namespace TDAmeritradeApi.Client.Models.AccountsAndTrading
 {
     public enum OrderStrategySessionType
     {
@@ -210,8 +212,8 @@
         public bool cancelable { get; set; }
         public bool editable { get; set; }
         public OrderStrategyStatusType? status { get; set; }
-        public string enteredTime { get; set; }
-        public string closeTime { get; set; }
+        public DateTime? enteredTime { get; set; }
+        public DateTime? closeTime { get; set; }
         public string tag { get; set; }
         public decimal? accountId { get; set; }
         public OrderActivity[] orderActivityCollection { get; set; }
@@ -222,7 +224,7 @@
 
     public class CancelTime
     {
-        public string date { get; set; }
+        public DateTime date { get; set; }
         public bool shortFormat { get; set; }
     }
 
