@@ -208,14 +208,14 @@ namespace TDAmeritradeApi.Client.Models.AccountsAndTrading
         public decimal? activationPrice { get; set; }
         public OrderSpecialInstructionType? specialInstruction { get; set; }
         public OrderStrategyType orderStrategyType { get; set; }
-        public decimal? orderId { get; set; }
+        public long? orderId { get; set; }
         public bool cancelable { get; set; }
         public bool editable { get; set; }
         public OrderStrategyStatusType? status { get; set; }
         public DateTime? enteredTime { get; set; }
         public DateTime? closeTime { get; set; }
         public string tag { get; set; }
-        public decimal? accountId { get; set; }
+        public long? accountId { get; set; }
         public OrderActivity[] orderActivityCollection { get; set; }
         public OrderLeg[] replacingOrderCollection { get; set; }
         public OrderStrategy[] childOrderStrategies { get; set; }
@@ -268,7 +268,7 @@ namespace TDAmeritradeApi.Client.Models.AccountsAndTrading
     public class OrderLeg
     {
         public InstrumentAssetType orderLegType { get; set; }
-        public decimal legId { get; set; }
+        public long legId { get; set; }
         public Instrument instrument { get; set; }
         public OrderInstructionType instruction { get; set; }
         public OrderPositionEffectType? positionEffect { get; set; }
