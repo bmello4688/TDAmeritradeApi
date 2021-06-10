@@ -5,20 +5,34 @@ namespace TDAmeritradeApi.Client.Models.MarketData
 {
     public abstract class MarketQuote
     {
-        public string symbol { get; set; }
-        public string description { get; set; }
-        public string exchange { get; set; }
-        public string exchangeName { get; set; }
-        public SecurityStatus securityStatus { get; set; }
+        public string Symbol { get; set; }
+        public string Description { get; set; }
+        public string Exchange { get; set; }
+        public string ExchangeName { get; set; }
+        public SecurityStatus SecurityStatus { get; set; }
+
+        public long TotalVolume { get; set; }
 
         public abstract DateTime Timestamp { get; }
+
+        public virtual decimal BidPrice { get; set; }
+
+        public virtual decimal AskPrice { get; set; }
+
+        public virtual decimal LastPrice { get; set; }
+
+        public virtual decimal BidSize { get; set; } = -1;
+
+        public virtual decimal AskSize { get; set; } = -1;
+
+        public virtual decimal LastSize { get; set; } = -1;
     }
 
     public class MutualFundMarketQuote : MarketQuote
     {
         public decimal closePrice { get; set; }
         public decimal netChange { get; set; }
-        public decimal totalVolume { get; set; }
+
         public DateTimeOffset tradeTimeInLong { get; set; }
         public decimal digits { get; set; }
         [JsonPropertyName("52WkHigh")]
@@ -32,18 +46,22 @@ namespace TDAmeritradeApi.Client.Models.MarketData
         public string divDate { get; set; }
 
         public override DateTime Timestamp => tradeTimeInLong.DateTime;
+
+        public override decimal BidPrice => closePrice;
+
+        public override decimal AskPrice => closePrice;
+
+        public override decimal LastPrice => closePrice;
     }
 
 
     public class IndexMarketQuote : MarketQuote
     {
-        public decimal lastPrice { get; set; }
         public decimal openPrice { get; set; }
         public decimal highPrice { get; set; }
         public decimal lowPrice { get; set; }
         public decimal closePrice { get; set; }
         public decimal netChange { get; set; }
-        public decimal totalVolume { get; set; }
         public DateTime tradeTimeInLong { get; set; }
         public decimal digits { get; set; }
         [JsonPropertyName("52WkHigh")]
@@ -52,19 +70,19 @@ namespace TDAmeritradeApi.Client.Models.MarketData
         public decimal _52WkLow { get; set; }
 
         public override DateTime Timestamp => tradeTimeInLong;
+
+        public override decimal BidPrice => lowPrice;
+
+        public override decimal AskPrice => highPrice;
     }
 
 
-    public class EquityMarketQuote : MutualFundMarketQuote
+    public class EquityMarketQuote : MarketQuote
     {
-        public float bidPrice { get; set; }
-        public float bidSize { get; set; }
         public string bidId { get; set; }
-        public float askPrice { get; set; }
-        public float askSize { get; set; }
+
         public string askId { get; set; }
-        public float lastPrice { get; set; }
-        public float lastSize { get; set; }
+
         public string lastId { get; set; }
         public decimal openPrice { get; set; }
         public decimal highPrice { get; set; }
@@ -77,6 +95,21 @@ namespace TDAmeritradeApi.Client.Models.MarketData
         public decimal regularMarketLastPrice { get; set; }
         public decimal regularMarketLastSize { get; set; }
         public decimal regularMarketNetChange { get; set; }
+
+        public decimal closePrice { get; set; }
+        public decimal netChange { get; set; }
+        public DateTimeOffset tradeTimeInLong { get; set; }
+        public decimal digits { get; set; }
+        [JsonPropertyName("52WkHigh")]
+        public decimal _52WkHigh { get; set; }
+        [JsonPropertyName("52WkLow")]
+        public decimal _52WkLow { get; set; }
+        public decimal nAV { get; set; }
+        public decimal peRatio { get; set; }
+        public decimal divAmount { get; set; }
+        public decimal divYield { get; set; }
+        public string divDate { get; set; }
+
         public DateTimeOffset regularMarketTradeTimeInLong { get; set; }
 
         public override DateTime Timestamp => quoteTimeInLong.DateTime;
@@ -122,6 +155,12 @@ namespace TDAmeritradeApi.Client.Models.MarketData
         public decimal _52WkHighInDouble { get; set; }
         [JsonPropertyName("52WkLowInDouble")]
         public decimal _52WkLowInDouble { get; set; }
+
+        public override decimal BidPrice => bidPriceInDouble;
+
+        public override decimal AskPrice => askPriceInDouble;
+
+        public override decimal LastPrice => lastPriceInDouble;
     }
 
     public class FutureMarketQuote : BaseFutureMarketQuote
@@ -135,6 +174,12 @@ namespace TDAmeritradeApi.Client.Models.MarketData
         public decimal futureMultiplier { get; set; }
         public decimal futureSettlementPrice { get; set; }
         public string futureActiveSymbol { get; set; }
+
+        public override decimal BidPrice => bidPriceInDouble;
+
+        public override decimal AskPrice => askPriceInDouble;
+
+        public override decimal LastPrice => lastPriceInDouble;
     }
 
 
@@ -157,22 +202,21 @@ namespace TDAmeritradeApi.Client.Models.MarketData
         public string expirationType { get; set; }
         public string exerciseType { get; set; }
         public bool inTheMoney { get; set; }
+
+        public override decimal BidPrice => bidPriceInDouble;
+
+        public override decimal AskPrice => askPriceInDouble;
+
+        public override decimal LastPrice => lastPriceInDouble;
     }
 
     public class OptionMarketQuote : MarketQuote
     {
-        public float bidPrice { get; set; }
-        public float bidSize { get; set; }
-        public float askPrice { get; set; }
-        public float askSize { get; set; }
-        public float lastPrice { get; set; }
-        public float lastSize { get; set; }
         public decimal openPrice { get; set; }
         public decimal highPrice { get; set; }
         public decimal lowPrice { get; set; }
         public decimal closePrice { get; set; }
         public float netChange { get; set; }
-        public long totalVolume { get; set; }
         public DateTimeOffset quoteTimeInLong { get; set; }
         public DateTimeOffset tradeTimeInLong { get; set; }
         public decimal mark { get; set; }

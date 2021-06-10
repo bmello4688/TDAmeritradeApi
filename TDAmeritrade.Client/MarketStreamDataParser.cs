@@ -248,47 +248,6 @@ namespace TDAmeritradeApi.Client
             return (quote != null ? quote.Symbol : null, quote);
         }
 
-        private static MarketQuote GetOptionQuote(Dictionary<string, string> datum)
-        {
-            var symbol = datum["key"];
-            return new OptionMarketQuote()
-            {
-                symbol = symbol,
-                description = GetValue<string>(1, datum),
-                bidPrice = GetValue<float>(2, datum),
-                askPrice = GetValue<float>(3, datum),
-                lastPrice = GetValue<float>(4, datum),
-                bidSize = GetValue<float>(20, datum),
-                askSize = GetValue<float>(21, datum),
-                lastSize = GetValue<float>(22, datum),
-                netChange = GetValue<float>(23, datum),
-                totalVolume = GetValue<long>(8, datum),
-                openInterest = GetValue<long>(9, datum),
-                volatility = GetValue<float>(10, datum),
-                securityStatus = GetValue<SecurityStatus>(37, datum),
-                mark = GetValue<decimal>(41, datum),
-                tradeTimeInLong = DateTime.Today.AddSeconds(GetValue<long>(11, datum)),
-                quoteTimeInLong = DateTime.Today.AddSeconds(GetValue<long>(12, datum)),
-                moneyIntrinsicValue = GetValue<decimal>(13, datum),
-                expirationDate = new DateTime(int.Parse(datum["16"]), int.Parse(datum["27"]), int.Parse(datum["30"])),
-                multiplier = GetValue<float>(17, datum),
-                strikePrice = GetValue<float>(24, datum),
-                contractType = GetValue<char>(25, datum),
-                underlying = GetValue<string>(26, datum),
-                deliverables = GetValue<string>(28, datum),
-                timeValue = GetValue<float>(29, datum),
-                daysToExpiration = GetValue<int>(31, datum),
-                delta = GetValue<float>(32, datum),
-                gamma = GetValue<float>(33, datum),
-                theta = GetValue<float>(34, datum),
-                vega = GetValue<float>(35, datum),
-                rho = GetValue<float>(36, datum),
-                theoreticalOptionValue = GetValue<decimal>(38, datum),
-                underlyingPrice = GetValue<decimal>(39, datum),
-                uvExpirationType = GetValue<char>(40, datum),
-            };
-        }
-
         private static T CreateQuote<T>(string symbol, LevelOneQuote quote =null)
             where T: LevelOneQuote, new()
         {
