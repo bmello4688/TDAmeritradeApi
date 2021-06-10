@@ -27,15 +27,15 @@ namespace TDAmeritradeApi.Client.Models.AccountsAndTrading
 
     public class Position
     {
-        public int shortQuantity { get; set; }
-        public int averagePrice { get; set; }
-        public int currentDayProfitLoss { get; set; }
-        public int currentDayProfitLossPercentage { get; set; }
-        public int longQuantity { get; set; }
-        public int settledLongQuantity { get; set; }
-        public int settledShortQuantity { get; set; }
-        public int agedQuantity { get; set; }
+        public decimal shortQuantity { get; set; }
+        public decimal averagePrice { get; set; }
+        public decimal currentDayProfitLoss { get; set; }
+        public decimal currentDayProfitLossPercentage { get; set; }
+        public decimal longQuantity { get; set; }
+        public decimal settledLongQuantity { get; set; }
+        public decimal settledShortQuantity { get; set; }
+        public decimal agedQuantity { get; set; }
         public Instrument instrument { get; set; }
-        public int marketValue { get; set; }
+        public decimal marketValue { get; set; }
     }
 }
