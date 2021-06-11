@@ -296,11 +296,11 @@ namespace TDClientTester
 
             int last_index = orders.Count - 1;
 
-            client.AccountsAndTradingApi.ReplaceOrderAsync(account.accountId, orders[last_index].orderId, order).Wait();
+            client.AccountsAndTradingApi.ReplaceOrderAsync(account.accountId, orders[last_index].orderId.Value, order).Wait();
 
             orders = client.AccountsAndTradingApi.GetAllOrdersAsync(account.accountId, OrderStrategyStatusType.QUEUED).Result;
 
-            client.AccountsAndTradingApi.CancelOrderAsync(account.accountId, orders[last_index].orderId).Wait();
+            client.AccountsAndTradingApi.CancelOrderAsync(account.accountId, orders[last_index].orderId.Value).Wait();
 
             orders = client.AccountsAndTradingApi.GetAllOrdersAsync(account.accountId, OrderStrategyStatusType.QUEUED).Result;
 

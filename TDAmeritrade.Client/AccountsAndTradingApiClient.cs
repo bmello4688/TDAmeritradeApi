@@ -143,12 +143,12 @@ namespace TDAmeritradeApi.Client
             await baseApiClient.SendRequest($"accounts/{accountID}/orders", Method.POST, null, orderStrategy);
         }
 
-        public async Task ReplaceOrderAsync(string accountID, decimal? orderId, OrderStrategy newOrderStrategy)
+        public async Task ReplaceOrderAsync(string accountID, long orderId, OrderStrategy newOrderStrategy)
         {
             await baseApiClient.SendRequest($"accounts/{accountID}/orders/{orderId}", Method.PUT, null, newOrderStrategy);
         }
 
-        public async Task CancelOrderAsync(string accountID, decimal? orderId)
+        public async Task CancelOrderAsync(string accountID, long orderId)
         {
             await baseApiClient.SendRequest($"accounts/{accountID}/orders/{orderId}", Method.DELETE, null);
         }
