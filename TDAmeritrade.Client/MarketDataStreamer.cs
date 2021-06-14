@@ -20,6 +20,7 @@ namespace TDAmeritradeApi.Client
     /// </summary>
     public class MarketDataStreamer
     {
+        private const int ReceiveBufferSize = 1024000;
         private readonly string clientID;
         private readonly UserAccountsAndPreferencesApiClient userAccountsAndPreferencesApiClient;
         private ClientWebSocket clientWebSocket = new ClientWebSocket();
@@ -42,6 +43,7 @@ namespace TDAmeritradeApi.Client
         {
             this.clientID = clientID;
             this.userAccountsAndPreferencesApiClient = userAccountsAndPreferencesApiClient;
+            clientWebSocket.Options.KeepAliveInterval = TimeSpan.Zero;
         }
 
         public async Task LoginAsync(string selectedAccountID = null)
@@ -445,7 +447,7 @@ namespace TDAmeritradeApi.Client
             {
                 (string key, T content) = ParseDatumItem(datum);
 
-                if(!string.IsNullOrWhiteSpace(key))
+                if (!string.IsNullOrWhiteSpace(key))
                     data.Add(new KeyValuePair<string, T>(key, content));
             }
 
@@ -471,34 +473,41 @@ namespace TDAmeritradeApi.Client
 
         private async void StartReceivingMessages()
         {
-            var buffer = new byte[1024000];
+            var buffer = new byte[ReceiveBufferSize];
 
             while (!cancellationTokenSource.Token.IsCancellationRequested)
             {
-                if (clientWebSocket.State == WebSocketState.Open)
+                try
                 {
-                    var result = await clientWebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-
-                    if (result.MessageType == WebSocketMessageType.Text)
+                    if (clientWebSocket.State == WebSocketState.Open)
                     {
-                        var responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                        bool wasSuccess = TryToDeserialize(responseJson, options, out StreamerResponse response);
-                        if (wasSuccess)
+                        var result = await clientWebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
+                        if (result.MessageType == WebSocketMessageType.Text)
                         {
-                            SaveResponse(response.response);
-                            SaveData(response.data);
-                            SaveData(response.snapshot);
+                            var responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                            bool wasSuccess = TryToDeserialize(responseJson, options, out StreamerResponse response);
+                            if (wasSuccess)
+                            {
+                                SaveResponse(response.response);
+                                SaveData(response.data);
+                                SaveData(response.snapshot);
+                            }
+                        }
+                        else if (result.MessageType == WebSocketMessageType.Binary)
+                        {
+                        }
+                        else if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            if (clientWebSocket.State != WebSocketState.Closed)
+                                await clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+                            cancellationTokenSource.Cancel();
                         }
                     }
-                    else if (result.MessageType == WebSocketMessageType.Binary)
-                    {
-                    }
-                    else if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        if (clientWebSocket.State != WebSocketState.Closed)
-                            await clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
-                        cancellationTokenSource.Cancel();
-                    }
+                }
+                catch (WebSocketException ex)
+                {
+
                 }
             }
         }
@@ -511,7 +520,7 @@ namespace TDAmeritradeApi.Client
                 jsonValue = JsonSerializer.Deserialize<T>(json, options);
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return false;
             }
