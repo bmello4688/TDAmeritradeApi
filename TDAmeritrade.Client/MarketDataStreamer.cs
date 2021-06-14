@@ -34,6 +34,7 @@ namespace TDAmeritradeApi.Client
         private string messageApiKey;
         private static readonly char[] ValidTimePeriod = new char[] { 'd', 'w', 'n', 'y' };
         private static readonly string[] QuoteServiceNames = new string[] { "QUOTE", "OPTION", "LEVELONE_FUTURES", "LEVELONE_FOREX", "LEVELONE_FUTURES_OPTIONS" };
+        private Dictionary<string, LevelOneQuote> existingQuotes = new Dictionary<string, LevelOneQuote>();
 
         public SubscribedMarketData MarketData { get; } = new SubscribedMarketData();
 
@@ -48,68 +49,74 @@ namespace TDAmeritradeApi.Client
 
         public async Task LoginAsync(string selectedAccountID = null)
         {
-            var userPrincipal = await userAccountsAndPreferencesApiClient.GetUserPrincipalsAsync();
-
-            var streamerInfo = userPrincipal.streamerInfo;
-
-            messageApiKey = userPrincipal.streamerSubscriptionKeys.keys[0].key;
-
-            if (selectedAccountID == null)
-                accountID = userPrincipal.primaryAccountId;
-            else
-                accountID = selectedAccountID;
-
-            var accountInfo = userPrincipal.accounts.First(a => a.accountId == accountID);
-
-            long millisecondsSinceEpoch = streamerInfo.tokenTimestamp.ToUnixTimeMilliseconds();
-
-            var credentials = new StreamerCredentials()
+            if (accountID == null)
             {
-                userid = accountID,
-                token = streamerInfo.token,
-                company = accountInfo.company,
-                segment = accountInfo.segment,
-                cddomain = accountInfo.accountCdDomainId,
-                usergroup = streamerInfo.userGroup,
-                accesslevel = streamerInfo.accessLevel,
-                authorized = "Y",
-                timestamp = millisecondsSinceEpoch,
-                appid = streamerInfo.appId,
-                acl = streamerInfo.acl
-            };
+                var userPrincipal = await userAccountsAndPreferencesApiClient.GetUserPrincipalsAsync();
 
-            var request = new Request()
-            {
-                service = "ADMIN",
-                command = "LOGIN",
-                parameters = new Dictionary<string, string>()
+                var streamerInfo = userPrincipal.streamerInfo;
+
+                messageApiKey = userPrincipal.streamerSubscriptionKeys.keys[0].key;
+
+                if (selectedAccountID == null)
+                    accountID = userPrincipal.primaryAccountId;
+                else
+                    accountID = selectedAccountID;
+
+                var accountInfo = userPrincipal.accounts.First(a => a.accountId == accountID);
+
+                long millisecondsSinceEpoch = streamerInfo.tokenTimestamp.ToUnixTimeMilliseconds();
+
+                var credentials = new StreamerCredentials()
+                {
+                    userid = accountID,
+                    token = streamerInfo.token,
+                    company = accountInfo.company,
+                    segment = accountInfo.segment,
+                    cddomain = accountInfo.accountCdDomainId,
+                    usergroup = streamerInfo.userGroup,
+                    accesslevel = streamerInfo.accessLevel,
+                    authorized = "Y",
+                    timestamp = millisecondsSinceEpoch,
+                    appid = streamerInfo.appId,
+                    acl = streamerInfo.acl
+                };
+
+                var request = new Request()
+                {
+                    service = "ADMIN",
+                    command = "LOGIN",
+                    parameters = new Dictionary<string, string>()
                 {
                     {"token", credentials.token },
                     {"version", "1.0" },
                     {"credential", credentials.ToQueryString() },
                     {"qoslevel", "1" },
                 }
-            };
+                };
 
-            await ConnectSocket(streamerInfo);
+                await ConnectSocket(streamerInfo);
 
-            await Send(request);
+                await Send(request);
+            }
         }
 
         public async Task LogoutAsync()
         {
-            var request = new Request()
+            if (accountID != null)
             {
-                service = "ADMIN",
-                command = "LOGOUT",
-                //parameters = new Dictionary<string, string>()
-            };
+                var request = new Request()
+                {
+                    service = "ADMIN",
+                    command = "LOGOUT",
+                    //parameters = new Dictionary<string, string>()
+                };
 
-            await Send(request);
+                await Send(request);
 
-            await clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+                await clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
 
-            accountID = null;
+                accountID = null;
+            }
         }
 
         public async Task QosRequestAsync(QualityofServiceType qualityofServiceType)
@@ -385,19 +392,16 @@ namespace TDAmeritradeApi.Client
                             {
                                 QuoteType quoteType = DetermineQuoteType(data.service);
 
-                                var keys = data.content.Select(c => c["key"]);
-
-                                var existingQuotesList = MarketData[MarketDataType.LevelOneQuotes].Where(kvp => keys.Contains(kvp.Key)).Select(kvm =>
-                                {
-                                    var queue = (ConcurrentQueue<LevelOneQuote>)kvm.Value;
-
-                                    queue.TryPeek(out LevelOneQuote marketQuote);
-                                    return new KeyValuePair<string, LevelOneQuote>(kvm.Key, marketQuote);
-                                });
-
-                                Dictionary<string, LevelOneQuote> existingQuotes = new Dictionary<string, LevelOneQuote>(existingQuotesList);
-
                                 var quotes = ParseData(data, datum => MarketStreamDataParser.ParseQuoteData(quoteType, datum, existingQuotes));
+
+                                //Update existing quotes
+                                foreach (var quote in quotes)
+                                {
+                                    if (existingQuotes.ContainsKey(quote.Key))
+                                        existingQuotes[quote.Key] = quote.Value;
+                                    else
+                                        existingQuotes.Add(quote.Key, quote.Value);
+                                }
 
                                 MarketData.AddQueuedData(MarketDataType.LevelOneQuotes, quotes);
                             }
@@ -477,37 +481,30 @@ namespace TDAmeritradeApi.Client
 
             while (!cancellationTokenSource.Token.IsCancellationRequested)
             {
-                try
+                if (clientWebSocket.State == WebSocketState.Open)
                 {
-                    if (clientWebSocket.State == WebSocketState.Open)
-                    {
-                        var result = await clientWebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    var result = await clientWebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
-                        if (result.MessageType == WebSocketMessageType.Text)
+                    if (result.MessageType == WebSocketMessageType.Text)
+                    {
+                        var responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                        bool wasSuccess = TryToDeserialize(responseJson, options, out StreamerResponse response);
+                        if (wasSuccess)
                         {
-                            var responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                            bool wasSuccess = TryToDeserialize(responseJson, options, out StreamerResponse response);
-                            if (wasSuccess)
-                            {
-                                SaveResponse(response.response);
-                                SaveData(response.data);
-                                SaveData(response.snapshot);
-                            }
-                        }
-                        else if (result.MessageType == WebSocketMessageType.Binary)
-                        {
-                        }
-                        else if (result.MessageType == WebSocketMessageType.Close)
-                        {
-                            if (clientWebSocket.State != WebSocketState.Closed)
-                                await clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
-                            cancellationTokenSource.Cancel();
+                            SaveResponse(response.response);
+                            SaveData(response.data);
+                            SaveData(response.snapshot);
                         }
                     }
-                }
-                catch (WebSocketException ex)
-                {
-
+                    else if (result.MessageType == WebSocketMessageType.Binary)
+                    {
+                    }
+                    else if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        if (clientWebSocket.State != WebSocketState.Closed)
+                            await clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+                        cancellationTokenSource.Cancel();
+                    }
                 }
             }
         }
