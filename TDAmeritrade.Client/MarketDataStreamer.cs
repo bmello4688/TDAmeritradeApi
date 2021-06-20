@@ -477,36 +477,40 @@ namespace TDAmeritradeApi.Client
 
         private async void StartReceivingMessages()
         {
-            var buffer = new byte[ReceiveBufferSize];
-
-            while (!cancellationTokenSource.Token.IsCancellationRequested)
+            try
             {
-                if (clientWebSocket.State == WebSocketState.Open)
-                {
-                    var result = await clientWebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                var buffer = new byte[ReceiveBufferSize];
 
-                    if (result.MessageType == WebSocketMessageType.Text)
+                while (!cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    if (clientWebSocket.State == WebSocketState.Open)
                     {
-                        var responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                        bool wasSuccess = TryToDeserialize(responseJson, options, out StreamerResponse response);
-                        if (wasSuccess)
+                        var result = await clientWebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
+                        if (result.MessageType == WebSocketMessageType.Text)
                         {
-                            SaveResponse(response.response);
-                            SaveData(response.data);
-                            SaveData(response.snapshot);
+                            var responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                            bool wasSuccess = TryToDeserialize(responseJson, options, out StreamerResponse response);
+                            if (wasSuccess)
+                            {
+                                SaveResponse(response.response);
+                                SaveData(response.data);
+                                SaveData(response.snapshot);
+                            }
                         }
-                    }
-                    else if (result.MessageType == WebSocketMessageType.Binary)
-                    {
-                    }
-                    else if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        if (clientWebSocket.State != WebSocketState.Closed)
-                            await clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
-                        cancellationTokenSource.Cancel();
+                        else if (result.MessageType == WebSocketMessageType.Binary)
+                        {
+                        }
+                        else if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            if (clientWebSocket.State != WebSocketState.Closed)
+                                await clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+                            cancellationTokenSource.Cancel();
+                        }
                     }
                 }
             }
+            catch (WebSocketException) { }
         }
 
         private static bool TryToDeserialize<T>(string json, JsonSerializerOptions? options, out T? jsonValue)
