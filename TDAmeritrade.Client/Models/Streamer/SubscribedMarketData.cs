@@ -55,5 +55,16 @@ namespace TDAmeritradeApi.Client.Models.Streamer
             if (items.Count > 0)
                 Task.Run(() => DataReceived?.Invoke(this, marketDataType));
         }
+
+        internal void RemoveData(MarketDataType marketDataType, List<string> symbols)
+        {
+            if (symbols == null)
+                return;
+
+            foreach (var symbol in symbols)
+            {
+                this[marketDataType].Remove(symbol, out dynamic _);
+            }
+        }
     }
 }

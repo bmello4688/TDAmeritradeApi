@@ -35,6 +35,7 @@ namespace TDAmeritradeApi.Client
         private static readonly char[] ValidTimePeriod = new char[] { 'd', 'w', 'n', 'y' };
         private static readonly string[] QuoteServiceNames = new string[] { "QUOTE", "OPTION", "LEVELONE_FUTURES", "LEVELONE_FOREX", "LEVELONE_FUTURES_OPTIONS" };
         private Dictionary<string, LevelOneQuote> existingQuotes = new Dictionary<string, LevelOneQuote>();
+        private Dictionary<string, List<string>> subscriptionLookup = new Dictionary<string, List<string>>();
 
         public SubscribedMarketData MarketData { get; } = new SubscribedMarketData();
 
@@ -232,10 +233,30 @@ namespace TDAmeritradeApi.Client
 
         public async Task SubscribeToLevelOneQuoteDataAsync(QuoteType quoteType, params string[] symbols)
         {
+            var serviceName = quoteType == QuoteType.Equity ? "QUOTE" : quoteType.ToString().ToUpperInvariant();
+
+            string commandName;
+            if (!subscriptionLookup.ContainsKey(serviceName))
+            {
+                subscriptionLookup.Add(serviceName, symbols.ToList());
+                commandName = "SUBS";
+            }
+            else
+            {
+                symbols = symbols.Where(symbol => !subscriptionLookup[serviceName].Contains(symbol)).ToArray();
+                if (symbols.Length > 0)
+                {
+                    subscriptionLookup[serviceName].AddRange(symbols);
+                    commandName = "ADD";
+                }
+                else
+                    return; //Already subscribed
+            }
+
             var request = new Request()
             {
-                service = quoteType == QuoteType.Equity ? "QUOTE" : quoteType.ToString().ToUpperInvariant(),
-                command = "SUBS",
+                service = serviceName,
+                command = commandName,
                 parameters = new Dictionary<string, string>()
                 {
                     {"keys", string.Join(",",symbols)}
@@ -338,6 +359,68 @@ namespace TDAmeritradeApi.Client
                 command = "UNSUBS",
             };
             await Send(request);
+
+            RemoveSubscribedData(serviceName);
+        }
+
+        private void RemoveSubscribedData(StreamerDataService serviceName)
+        {
+            switch (serviceName)
+            {
+                case StreamerDataService.ACCT_ACTIVITY:
+                    break;
+                case StreamerDataService.ACTIVES_NASDAQ:
+                    break;
+                case StreamerDataService.ACTIVES_NYSE:
+                    break;
+                case StreamerDataService.ACTIVES_OTCBB:
+                    break;
+                case StreamerDataService.ACTIVES_OPTIONS:
+                    break;
+                case StreamerDataService.FOREX_BOOK:
+                    break;
+                case StreamerDataService.FUTURES_BOOK:
+                    break;
+                case StreamerDataService.LISTED_BOOK:
+                    break;
+                case StreamerDataService.NASDAQ_BOOK:
+                    break;
+                case StreamerDataService.OPTIONS_BOOK:
+                    break;
+                case StreamerDataService.FUTURES_OPTIONS_BOOK:
+                    break;
+                case StreamerDataService.CHART_EQUITY:
+                    break;
+                case StreamerDataService.CHART_FUTURES:
+                    break;
+                case StreamerDataService.CHART_HISTORY_FUTURES:
+                    break;
+                case StreamerDataService.QUOTE:
+                case StreamerDataService.LEVELONE_FUTURES:
+                case StreamerDataService.LEVELONE_FOREX:
+                case StreamerDataService.LEVELONE_FUTURES_OPTIONS:
+                case StreamerDataService.OPTION:
+                    MarketData.RemoveData(MarketDataType.LevelOneQuotes, subscriptionLookup[serviceName.ToString()]);
+                    break;
+                case StreamerDataService.NEWS_HEADLINE:
+                    break;
+                case StreamerDataService.NEWS_STORY:
+                    break;
+                case StreamerDataService.NEWS_HEADLINE_LIST:
+                    break;
+                case StreamerDataService.TIMESALE_EQUITY:
+                    break;
+                case StreamerDataService.TIMESALE_FUTURES:
+                    break;
+                case StreamerDataService.TIMESALE_FOREX:
+                    break;
+                case StreamerDataService.TIMESALE_OPTIONS:
+                    break;
+                case StreamerDataService.STREAMER_SERVER:
+                    break;
+                default:
+                    break;
+            }
         }
 
         private async Task Send(Request request)

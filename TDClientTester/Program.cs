@@ -128,7 +128,9 @@ namespace TDClientTester
             if (trade != null)
                 client.LiveMarketDataStreamer.SubscribeToLevelOneQuoteDataAsync(QuoteType.Option, trade.Symbol).Wait();
 
-            while (client.LiveMarketDataStreamer.MarketData[MarketDataType.LevelOneQuotes].Count < 2)
+            client.LiveMarketDataStreamer.SubscribeToLevelOneQuoteDataAsync(QuoteType.Equity, "GOOG").Wait();
+
+            while (client.LiveMarketDataStreamer.MarketData[MarketDataType.LevelOneQuotes].Count < (trade != null? 4 : 3))
                 Thread.Sleep(100);
 
             client.LiveMarketDataStreamer.SubscribeToNewsHeadlinesAsync("MSFT", "AAPL").Wait();
