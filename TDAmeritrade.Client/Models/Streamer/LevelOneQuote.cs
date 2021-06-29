@@ -21,6 +21,17 @@ namespace TDAmeritradeApi.Client.Models.Streamer
         public float Mark { get; internal set; }
         public DateTimeOffset TradeTime { get; internal set; }
         public DateTimeOffset QuoteTime { get; internal set; }
+
+        public string PrimaryListingExchangeID { get; internal set; }
+
+        public string PrimaryListingExchangeName { get; internal set; }
+
+        public string LastTradeExchange { get; internal set; }
+
+        public bool HasQuotes => !PrimaryListingExchangeID.Contains("indices", StringComparison.InvariantCultureIgnoreCase)
+                                   && !PrimaryListingExchangeID.Contains("mutual", StringComparison.InvariantCultureIgnoreCase);
+
+        public bool HasTrades => !PrimaryListingExchangeID.Contains("pink", StringComparison.InvariantCultureIgnoreCase);
     }
 
     public class EquityLevelOneQuote : LevelOneQuote

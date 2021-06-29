@@ -54,15 +54,15 @@ namespace TDClientTester
 
             client.LogIn(new CliCredentials()).Wait();
 
-            TestMarketData(client);
+            //TestMarketData(client);
 
-            TestAccounts(client);
+            //TestAccounts(client);
 
-            TestInstrumentData(client);
+            //TestInstrumentData(client);
 
-            TestWatchlistApi(client);
+            //TestWatchlistApi(client);
 
-            TestUserAccountsAndPreferences(client);
+            //TestUserAccountsAndPreferences(client);
 
             TestStreamer(client);
         }
@@ -105,11 +105,20 @@ namespace TDClientTester
 
             client.LiveMarketDataStreamer.SubscribeToMinuteChartDataAsync(true, "MSFT", "AAPL").Wait();
 
+            bool receivedEvent = false;
+            client.LiveMarketDataStreamer.MarketData.DataReceived += (_, mdt) =>
+            {
+                receivedEvent = true;
+            };
+
             var optionsSubscription = client.LiveMarketDataStreamer.MarketData[MarketDataType.MostTraded]
                 .First(x => x.Key.Contains("OPTS")).Value;
 
             //null on market close days
             var trade = optionsSubscription?.Entries[0].Trades[0];
+
+            while (!receivedEvent)
+                Thread.Sleep(100);
 
             while (client.LiveMarketDataStreamer.MarketData[MarketDataType.Charts].Count != 2)
                 Thread.Sleep(100);

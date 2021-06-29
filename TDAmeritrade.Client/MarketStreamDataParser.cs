@@ -34,6 +34,10 @@ namespace TDAmeritradeApi.Client
                 {4, (nameof(marketQuote.BidSize), typeof(float), null) },
                 {5, (nameof(marketQuote.AskSize), typeof(float), null) },
                 {8, (nameof(marketQuote.TotalVolume), typeof(long), null) },
+                {9, (nameof(marketQuote.LastSize), typeof(float), In100s) },
+                {16, (nameof(marketQuote.PrimaryListingExchangeID), typeof(char), ConvertToExchangeName) },
+                {26, (nameof(marketQuote.LastTradeExchange), typeof(char), ConvertToExchangeName) },
+                {39, (nameof(marketQuote.PrimaryListingExchangeName), typeof(string), null) },
                 {48, (nameof(marketQuote.SecurityStatus), typeof(SecurityStatus), null) },
                 {49, (nameof(marketQuote.Mark), typeof(float), null) },
                 {50, (nameof(marketQuote.TradeTime), typeof(long), ConvertToDateTimeOffset) },
@@ -61,7 +65,7 @@ namespace TDAmeritradeApi.Client
                 {17, (nameof(optionMarketQuote.Multiplier), typeof(float), null) },
                 {20, (nameof(optionMarketQuote.BidSize), typeof(float), null) },
                 {21, (nameof(optionMarketQuote.AskSize), typeof(float), null) },
-                {22, (nameof(optionMarketQuote.LastSize), typeof(float), null) },
+                {22, (nameof(optionMarketQuote.LastSize), typeof(float), In100s) },
                 {23, (nameof(optionMarketQuote.NetChange), typeof(float), null) },
                 {24, (nameof(optionMarketQuote.StrikePrice), typeof(float), null) },
                 {25, (nameof(optionMarketQuote.ContractType), typeof(char), null) },
@@ -86,6 +90,50 @@ namespace TDAmeritradeApi.Client
             };
 
             quoteDefinitionMap.Add(QuoteType.Option, optionQuoteDefinitionLookup);
+        }
+
+        private static object In100s(object arg)
+        {
+            if (arg is float num)
+                return num * 100;
+            else if (arg is double num1)
+                return num1 * 100;
+            else if (arg is decimal num2)
+                return num2 * 100;
+
+            return arg;
+        }
+
+        private static object ConvertToExchangeName(object arg)
+        {
+            if(arg is char exchangeID)
+            {
+                switch (exchangeID)
+                {
+                    case 'n':
+                        return "NYSE";
+                    case 'q':
+                        return "NASDAQ";
+                    case 'p':
+                        return "PACIFIC";
+                    case 'g':
+                        return "AMEX_INDEX";
+                    case 'm':
+                        return "MUTUAL_FUND";
+                    case '9':
+                        return "PINK_SHEET";
+                    case 'a':
+                        return "AMEX";
+                    case 'u':
+                        return "OTCBB";
+                    case 'x':
+                        return "INDICES";
+                    default:
+                        break;
+                }
+            }
+
+            return "UNKNOWN";
         }
 
         internal static (string, ActiveTradeSubscription) ParseActiveTradeSubscription(Dictionary<string, string> datum)
