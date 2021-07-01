@@ -65,5 +65,12 @@ namespace TDAmeritradeApi.Client.Models.Streamer
         public float TheoreticalOptionValue { get; internal set; }
         public decimal UnderlyingPrice { get; internal set; }
         public char UVExpirationType { get; internal set; }
+
+        public OptionLevelOneQuote()
+        {
+            PrimaryListingExchangeID = "options";
+            PrimaryListingExchangeName = "";
+            LastTradeExchange = "";
+        }
     }
 }
