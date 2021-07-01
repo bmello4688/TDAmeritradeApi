@@ -40,9 +40,9 @@ namespace TDAmeritradeApi.Client
                 {39, (nameof(marketQuote.PrimaryListingExchangeName), typeof(string), null) },
                 {48, (nameof(marketQuote.SecurityStatus), typeof(SecurityStatus), null) },
                 {49, (nameof(marketQuote.Mark), typeof(float), null) },
-                {50, (nameof(marketQuote.TradeTime), typeof(long), ConvertToDateTimeOffset) },
-                {51, (nameof(marketQuote.QuoteTime), typeof(long), ConvertToDateTimeOffset) },
-                {52, (nameof(marketQuote.RegularMarketTradeTime), typeof(long), ConvertToDateTimeOffset) }
+                {50, (nameof(marketQuote.TradeTime), typeof(long), ConvertToDateTimeOffsetMillisecondsFromEpoch) },
+                {51, (nameof(marketQuote.QuoteTime), typeof(long), ConvertToDateTimeOffsetMillisecondsFromEpoch) },
+                {52, (nameof(marketQuote.RegularMarketTradeTime), typeof(long), ConvertToDateTimeOffsetMillisecondsFromEpoch) }
             };
 
             quoteDefinitionMap.Add(QuoteType.Equity, equityQuoteDefinitionLookup);
@@ -58,8 +58,8 @@ namespace TDAmeritradeApi.Client
                 {8, (nameof(optionMarketQuote.TotalVolume), typeof(long), null) },
                 {9, (nameof(optionMarketQuote.OpenInterest), typeof(long), null) },
                 {10, (nameof(optionMarketQuote.Volatility), typeof(float), null) },
-                {11, (nameof(optionMarketQuote.TradeTime), typeof(long), ConvertToDateTimeOffset) },
-                {12, (nameof(optionMarketQuote.QuoteTime), typeof(long), ConvertToDateTimeOffset) },
+                {11, (nameof(optionMarketQuote.TradeTime), typeof(long), ConvertToDateTimeOffsetSecondsFromMinuteNewYorkTime) },
+                {12, (nameof(optionMarketQuote.QuoteTime), typeof(long), ConvertToDateTimeOffsetSecondsFromMinuteNewYorkTime) },
                 {13, (nameof(optionMarketQuote.MoneyIntrinsicValue), typeof(float), null) },
                 {16, (nameof(optionMarketQuote.ExpirationYear), typeof(int), null) },
                 {17, (nameof(optionMarketQuote.Multiplier), typeof(float), null) },
@@ -333,9 +333,17 @@ namespace TDAmeritradeApi.Client
             }
         }
 
-        private static object ConvertToDateTimeOffset(object unixTime)
+        private static object ConvertToDateTimeOffsetMillisecondsFromEpoch(object unixTime)
         {
             return DateTimeOffset.FromUnixTimeMilliseconds((long)unixTime);
+        }
+
+        private static object ConvertToDateTimeOffsetSecondsFromMinuteNewYorkTime(object secondsSinceMidnightEST)
+        {
+            var est = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+            var midnightEST = TimeZoneInfo.ConvertTime(DateTime.UtcNow, est).Date;
+
+            return new DateTimeOffset(midnightEST.AddSeconds((long)secondsSinceMidnightEST).ToUniversalTime());
         }
 
         private static T GetValue<T>(int index, Dictionary<string, string> datum)
