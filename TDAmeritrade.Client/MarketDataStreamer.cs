@@ -26,7 +26,7 @@ namespace TDAmeritradeApi.Client
         private ClientWebSocket clientWebSocket = new ClientWebSocket();
         private JsonSerializerOptions options = BaseApiClient.GetJsonSerializerOptions();
         private Task receiveMessagesTask;
-        private object parseSubscribedDataTask;
+        private Task parseSubscribedDataTask;
         private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private ConcurrentDictionary<string, Response> responseDictionary = new ConcurrentDictionary<string, Response>();
         private ConcurrentQueue<DataResponse> subscribedDataQueue = new ConcurrentQueue<DataResponse>();
@@ -45,7 +45,7 @@ namespace TDAmeritradeApi.Client
         {
             this.clientID = clientID;
             this.userAccountsAndPreferencesApiClient = userAccountsAndPreferencesApiClient;
-            clientWebSocket.Options.KeepAliveInterval = TimeSpan.Zero;
+            clientWebSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(1);
         }
 
         public async Task LoginAsync(string selectedAccountID = null)
@@ -435,14 +435,16 @@ namespace TDAmeritradeApi.Client
 
         private async Task ConnectSocket(StreamerInfo streamerInfo)
         {
-            if (clientWebSocket.State == WebSocketState.Closed || clientWebSocket.State == WebSocketState.None)
+            if (clientWebSocket.State == WebSocketState.Closed || clientWebSocket.State == WebSocketState.None || clientWebSocket.State == WebSocketState.Aborted)
             {
                 //
                 await clientWebSocket.ConnectAsync(new Uri($"wss://{streamerInfo.streamerSocketUrl}/ws"), CancellationToken.None);
 
                 //Start Receiving
-                receiveMessagesTask = Task.Run(StartReceivingMessages);
-                parseSubscribedDataTask = Task.Run(ParseSubscribedData);
+                if(receiveMessagesTask == null || receiveMessagesTask.IsCompleted)
+                    receiveMessagesTask = Task.Run(StartReceivingMessages);
+                if (parseSubscribedDataTask == null || parseSubscribedDataTask.IsCompleted)
+                    parseSubscribedDataTask = Task.Run(ParseSubscribedData);
             }
         }
 
