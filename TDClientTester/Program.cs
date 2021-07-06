@@ -94,6 +94,8 @@ namespace TDClientTester
 
             client.LiveMarketDataStreamer.QosRequestAsync(QualityofServiceType.RealTime).Wait();
 
+            client.LiveMarketDataStreamer.LogoutAsync().Wait();
+
             client.LiveMarketDataStreamer.SubscribeToMostActiveTradesAsync(TradeVenueType.NYSE, ActiveTradeSubscriptionDuration._ALL).Wait();
 
             client.LiveMarketDataStreamer.SubscribeToMostActiveTradesAsync(TradeVenueType.NASDAQ, ActiveTradeSubscriptionDuration._ALL).Wait();

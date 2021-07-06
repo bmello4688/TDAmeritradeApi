@@ -23,11 +23,11 @@ namespace TDAmeritradeApi.Client
         private const int ReceiveBufferSize = 1024000;
         private readonly string clientID;
         private readonly UserAccountsAndPreferencesApiClient userAccountsAndPreferencesApiClient;
-        private ClientWebSocket clientWebSocket = new ClientWebSocket();
+        private ClientWebSocket clientWebSocket;
         private JsonSerializerOptions options = BaseApiClient.GetJsonSerializerOptions();
         private Task receiveMessagesTask;
         private Task parseSubscribedDataTask;
-        private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        private CancellationTokenSource cancellationTokenSource;
         private ConcurrentDictionary<string, Response> responseDictionary = new ConcurrentDictionary<string, Response>();
         private ConcurrentQueue<DataResponse> subscribedDataQueue = new ConcurrentQueue<DataResponse>();
         private string accountID;
@@ -36,69 +36,66 @@ namespace TDAmeritradeApi.Client
         private static readonly string[] QuoteServiceNames = new string[] { "QUOTE", "OPTION", "LEVELONE_FUTURES", "LEVELONE_FOREX", "LEVELONE_FUTURES_OPTIONS" };
         private Dictionary<string, LevelOneQuote> existingQuotes = new Dictionary<string, LevelOneQuote>();
         private Dictionary<string, List<string>> subscriptionLookup = new Dictionary<string, List<string>>();
+        private Uri tdStreamingUri;
 
         public SubscribedMarketData MarketData { get; } = new SubscribedMarketData();
 
-        public bool IsConnected { get => clientWebSocket.State == WebSocketState.Open; }
+        public bool IsConnected { get => clientWebSocket?.State == WebSocketState.Open; }
 
         public MarketDataStreamer(string clientID, UserAccountsAndPreferencesApiClient userAccountsAndPreferencesApiClient)
         {
             this.clientID = clientID;
             this.userAccountsAndPreferencesApiClient = userAccountsAndPreferencesApiClient;
-            clientWebSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(1);
         }
 
         public async Task LoginAsync(string selectedAccountID = null)
         {
-            if (accountID == null)
+            var userPrincipal = await userAccountsAndPreferencesApiClient.GetUserPrincipalsAsync();
+
+            var streamerInfo = userPrincipal.streamerInfo;
+
+            messageApiKey = userPrincipal.streamerSubscriptionKeys.keys[0].key;
+
+            if (selectedAccountID == null)
+                accountID = userPrincipal.primaryAccountId;
+            else
+                accountID = selectedAccountID;
+
+            var accountInfo = userPrincipal.accounts.First(a => a.accountId == accountID);
+
+            long millisecondsSinceEpoch = streamerInfo.tokenTimestamp.ToUnixTimeMilliseconds();
+
+            var credentials = new StreamerCredentials()
             {
-                var userPrincipal = await userAccountsAndPreferencesApiClient.GetUserPrincipalsAsync();
+                userid = accountID,
+                token = streamerInfo.token,
+                company = accountInfo.company,
+                segment = accountInfo.segment,
+                cddomain = accountInfo.accountCdDomainId,
+                usergroup = streamerInfo.userGroup,
+                accesslevel = streamerInfo.accessLevel,
+                authorized = "Y",
+                timestamp = millisecondsSinceEpoch,
+                appid = streamerInfo.appId,
+                acl = streamerInfo.acl
+            };
 
-                var streamerInfo = userPrincipal.streamerInfo;
-
-                messageApiKey = userPrincipal.streamerSubscriptionKeys.keys[0].key;
-
-                if (selectedAccountID == null)
-                    accountID = userPrincipal.primaryAccountId;
-                else
-                    accountID = selectedAccountID;
-
-                var accountInfo = userPrincipal.accounts.First(a => a.accountId == accountID);
-
-                long millisecondsSinceEpoch = streamerInfo.tokenTimestamp.ToUnixTimeMilliseconds();
-
-                var credentials = new StreamerCredentials()
-                {
-                    userid = accountID,
-                    token = streamerInfo.token,
-                    company = accountInfo.company,
-                    segment = accountInfo.segment,
-                    cddomain = accountInfo.accountCdDomainId,
-                    usergroup = streamerInfo.userGroup,
-                    accesslevel = streamerInfo.accessLevel,
-                    authorized = "Y",
-                    timestamp = millisecondsSinceEpoch,
-                    appid = streamerInfo.appId,
-                    acl = streamerInfo.acl
-                };
-
-                var request = new Request()
-                {
-                    service = "ADMIN",
-                    command = "LOGIN",
-                    parameters = new Dictionary<string, string>()
+            var request = new Request()
+            {
+                service = "ADMIN",
+                command = "LOGIN",
+                parameters = new Dictionary<string, string>()
                 {
                     {"token", credentials.token },
                     {"version", "1.0" },
                     {"credential", credentials.ToQueryString() },
                     {"qoslevel", "1" },
                 }
-                };
+            };
 
-                await ConnectSocket(streamerInfo);
+            await ConnectSocket(streamerInfo);
 
-                await Send(request);
-            }
+            await Send(request);
         }
 
         public async Task LogoutAsync()
@@ -115,8 +112,6 @@ namespace TDAmeritradeApi.Client
                 await Send(request);
 
                 await clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
-
-                accountID = null;
             }
         }
 
@@ -425,6 +420,11 @@ namespace TDAmeritradeApi.Client
 
         private async Task Send(Request request)
         {
+            if (tdStreamingUri != null && clientWebSocket != null && (clientWebSocket.State == WebSocketState.Closed || clientWebSocket.State == WebSocketState.Aborted))
+                await LoginAsync(accountID); //Reconnect
+            else if (clientWebSocket == null)
+                throw new InvalidOperationException("Call LoginAsync first before using the other methods.");
+
             var response = await SendSocketMessage(request);
 
             var code = int.Parse(response.content["code"]);
@@ -435,17 +435,33 @@ namespace TDAmeritradeApi.Client
 
         private async Task ConnectSocket(StreamerInfo streamerInfo)
         {
-            if (clientWebSocket.State == WebSocketState.Closed || clientWebSocket.State == WebSocketState.None || clientWebSocket.State == WebSocketState.Aborted)
+            if (clientWebSocket == null || clientWebSocket.State == WebSocketState.Closed || clientWebSocket.State == WebSocketState.None || clientWebSocket.State == WebSocketState.Aborted)
             {
+                tdStreamingUri = new Uri($"wss://{streamerInfo.streamerSocketUrl}/ws");
                 //
-                await clientWebSocket.ConnectAsync(new Uri($"wss://{streamerInfo.streamerSocketUrl}/ws"), CancellationToken.None);
-
-                //Start Receiving
-                if(receiveMessagesTask == null || receiveMessagesTask.IsCompleted)
-                    receiveMessagesTask = Task.Run(StartReceivingMessages);
-                if (parseSubscribedDataTask == null || parseSubscribedDataTask.IsCompleted)
-                    parseSubscribedDataTask = Task.Run(ParseSubscribedData);
+                await StartWebSocketAsync();
             }
+        }
+
+        private async Task StartWebSocketAsync()
+        {
+            if (clientWebSocket != null && (clientWebSocket.State == WebSocketState.Closed || clientWebSocket.State == WebSocketState.Aborted))
+            {
+                clientWebSocket.Dispose();
+            }
+
+            clientWebSocket = new ClientWebSocket();
+            clientWebSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(1);
+            await clientWebSocket.ConnectAsync(tdStreamingUri, CancellationToken.None);
+
+            if (cancellationTokenSource == null || cancellationTokenSource.IsCancellationRequested)
+                cancellationTokenSource = new CancellationTokenSource();
+
+            //Start Receiving
+            if (receiveMessagesTask == null || receiveMessagesTask.IsCompleted)
+                receiveMessagesTask = Task.Run(StartReceivingMessages);
+            if (parseSubscribedDataTask == null || parseSubscribedDataTask.IsCompleted)
+                parseSubscribedDataTask = Task.Run(ParseSubscribedData);
         }
 
         private void ParseSubscribedData()
