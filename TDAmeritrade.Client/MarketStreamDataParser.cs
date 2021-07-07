@@ -9,6 +9,7 @@ using System.Xml.Serialization;
 using TDAmeritradeApi.Client.Models.MarketData;
 using TDAmeritradeApi.Client.Models.Streamer;
 using TDAmeritradeApi.Client.Models.Streamer.AccountActivityModels;
+using TimeZoneConverter;
 
 namespace TDAmeritradeApi.Client
 {
@@ -340,7 +341,7 @@ namespace TDAmeritradeApi.Client
 
         private static object ConvertToDateTimeOffsetSecondsFromMinuteNewYorkTime(object secondsSinceMidnightEST)
         {
-            var est = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+            var est = TZConvert.GetTimeZoneInfo("Eastern Standard Time");
             var midnightEST = TimeZoneInfo.ConvertTime(DateTime.UtcNow, est).Date;
 
             return new DateTimeOffset(midnightEST.AddSeconds((long)secondsSinceMidnightEST).ToUniversalTime());
