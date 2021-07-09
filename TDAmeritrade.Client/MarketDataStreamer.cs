@@ -648,20 +648,22 @@ namespace TDAmeritradeApi.Client
                 {
                     isReconnecting = true;
 
-                    Console.WriteLine($"Reconnection happened, type: {info.Type}");
+                    Console.WriteLine($"TD Ameritrade Reconnection happened, type: {info.Type}");
 
                     await LoginAsync();
 
-                    clientWebSocket.Send(lastQosCommand);
+                    if(lastQosCommand != null)
+                        clientWebSocket.Send(lastQosCommand);
 
                     foreach (var serviceNameToSymbols in subscriptionLookup)
                     {
                         //TODO: Figure how to pass in other types
-                        if(!lastCommandForRetry.Contains(serviceNameToSymbols.Key))
+                        if(!lastCommandForRetry?.Contains(serviceNameToSymbols.Key) ?? true)
                             await SubscribeAsync(Enum.Parse<StreamerDataService>(serviceNameToSymbols.Key), serviceNameToSymbols.Value.ToArray());
                     }
 
-                    clientWebSocket.Send(lastCommandForRetry);
+                    if(lastCommandForRetry != null)
+                        clientWebSocket.Send(lastCommandForRetry);
 
                     isReconnecting = false;
                 }
@@ -671,7 +673,7 @@ namespace TDAmeritradeApi.Client
             {
                 if (info.Type != DisconnectionType.Exit)
                 {
-                    Console.WriteLine($"Disconnection happened, type: {info.Type}");
+                    Console.WriteLine($"TD Ameritrade Disconnection happened, type: {info.Type}");
                 }
             });
 
