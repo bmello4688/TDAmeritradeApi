@@ -28,7 +28,6 @@ namespace TDAmeritradeApi.Client
         private readonly Func<ClientWebSocket> clientWebSocketFactory;
         private WebsocketClient clientWebSocket;
         private JsonSerializerOptions options = BaseApiClient.GetJsonSerializerOptions();
-        private Task receiveMessagesTask;
         private Task parseSubscribedDataTask;
         private CancellationTokenSource cancellationTokenSource;
         private ConcurrentDictionary<string, Response> responseDictionary = new ConcurrentDictionary<string, Response>();
@@ -43,6 +42,7 @@ namespace TDAmeritradeApi.Client
         private string lastQosCommand;
         private string lastCommandForRetry;
         private bool isReconnecting;
+        private bool debugMessages = false;
 
         public SubscribedMarketData MarketData { get; } = new SubscribedMarketData();
 
@@ -687,7 +687,8 @@ namespace TDAmeritradeApi.Client
 
             clientWebSocket.MessageReceived.Subscribe(msg =>
             {
-                //Console.WriteLine($"Message received: {msg}");
+                if(debugMessages)
+                    Console.WriteLine($"Message received: {msg}");
 
                 if (msg.MessageType == WebSocketMessageType.Text)
                 {
@@ -924,6 +925,8 @@ namespace TDAmeritradeApi.Client
             else if (request.command != "LOGIN" && request.command != "LOGOUT" && !isReconnecting)
                 lastCommandForRetry = body;
 
+            if(debugMessages)
+                Console.WriteLine($"Message sent: {body}");
             clientWebSocket.Send(body);
 
             //wait for response
