@@ -374,25 +374,33 @@ namespace TDAmeritradeApi.Client
             await Send(request);
         }
 
-        public async Task UnsubscribeAsync(MarketDataType marketDataType, string symbol)
+        public async Task UnsubscribeAsync(MarketDataType marketDataType, params string[] symbolsToRemove)
         {
-            if (MarketData[marketDataType].TryRemove(symbol, out dynamic value))
-            {
-                object item = GetItem(value);
-
-                var symbols = MarketData[marketDataType].Where(kvp =>
+            //get all removed symbol objects
+            var removeableServiceNames = MarketData[marketDataType]
+                .Where(kvp => symbolsToRemove.Contains(kvp.Key))
+                .Select(kvp =>
                 {
                     object existingItem = GetItem(kvp.Value);
+                    return GetServiceByType(existingItem);
 
-                    return existingItem.GetType() == item.GetType();
+                }).Distinct();
+
+            foreach (var serviceName in removeableServiceNames)
+            {
+                var remainingSymbols = MarketData[marketDataType].Where(kvp =>
+                {
+                    object existingItem = GetItem(kvp.Value);
+                    var service = GetServiceByType(existingItem);
+
+                    return service == serviceName &&
+                            !symbolsToRemove.Contains(kvp.Key);
 
                 }).Select(kvp => kvp.Key).ToList();
 
-                var serviceName = GetServiceByType(item);
-
                 await UnsubscribeAsync(serviceName);
 
-                await SubscribeAsync(serviceName, symbols.ToArray());
+                await SubscribeAsync(serviceName, remainingSymbols.ToArray());
             }
         }
 
