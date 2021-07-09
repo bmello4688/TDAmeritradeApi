@@ -15,5 +15,6 @@ namespace TDAmeritradeApi.Client.Models.Streamer
         public long LastSequence { get; set; }
 
         public long UniqueNumber { get; set; }
+        public InstrumentType Type { get; internal set; }
     }
 }

@@ -11,5 +11,6 @@ namespace TDAmeritradeApi.Client.Models.Streamer
         public TimeSpan DisplayTime { get; internal set; }
         public int NumberOfGroups { get; internal set; }
         public List<ActiveTradeSubscriptionEntry> Entries { get; internal set; }
+        public string Type { get; internal set; }
     }
 }

@@ -94,11 +94,13 @@ namespace TDClientTester
 
             client.LiveMarketDataStreamer.QosRequestAsync(QualityofServiceType.RealTime).Wait();
 
-            client.LiveMarketDataStreamer.LogoutAsync().Wait();
+            client.LiveMarketDataStreamer.SubscribeToMostActiveTradesAsync(TradeVenueType.NYSE, ActiveTradeSubscriptionDuration._ALL).Wait();
 
             client.LiveMarketDataStreamer.SubscribeToMostActiveTradesAsync(TradeVenueType.NYSE, ActiveTradeSubscriptionDuration._ALL).Wait();
 
             client.LiveMarketDataStreamer.SubscribeToMostActiveTradesAsync(TradeVenueType.NASDAQ, ActiveTradeSubscriptionDuration._ALL).Wait();
+
+            client.LiveMarketDataStreamer.LogoutAsync().Wait();
 
             client.LiveMarketDataStreamer.SubscribeToMostActiveTradesAsync(TradeVenueType.OPTIONS, ActiveTradeSubscriptionDuration._ALL).Wait();
 
@@ -133,6 +135,11 @@ namespace TDClientTester
             client.LiveMarketDataStreamer.SubscribeToLevelOneQuoteDataAsync(QuoteType.Equity, "GOOG").Wait();
 
             while (client.LiveMarketDataStreamer.MarketData[MarketDataType.LevelOneQuotes].Count < (trade != null? 4 : 3))
+                Thread.Sleep(100);
+
+            client.LiveMarketDataStreamer.UnsubscribeAsync(MarketDataType.LevelOneQuotes, "MSFT").Wait();
+
+            while (client.LiveMarketDataStreamer.MarketData[MarketDataType.LevelOneQuotes].Count < (trade != null ? 3 : 2))
                 Thread.Sleep(100);
 
             client.LiveMarketDataStreamer.SubscribeToNewsHeadlinesAsync("MSFT", "AAPL").Wait();

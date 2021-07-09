@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,6 +12,7 @@ using System.Threading.Tasks;
 using TDAmeritradeApi.Client.Models.AccountsAndTrading;
 using TDAmeritradeApi.Client.Models.MarketData;
 using TDAmeritradeApi.Client.Models.Streamer;
+using Websocket.Client;
 
 namespace TDAmeritradeApi.Client
 {
@@ -20,10 +22,11 @@ namespace TDAmeritradeApi.Client
     /// </summary>
     public class MarketDataStreamer
     {
-        private const int ReceiveBufferSize = 1024000;
+        private const int WaitForResponseTimeout = 10000;
         private readonly string clientID;
         private readonly UserAccountsAndPreferencesApiClient userAccountsAndPreferencesApiClient;
-        private ClientWebSocket clientWebSocket;
+        private readonly Func<ClientWebSocket> clientWebSocketFactory;
+        private WebsocketClient clientWebSocket;
         private JsonSerializerOptions options = BaseApiClient.GetJsonSerializerOptions();
         private Task receiveMessagesTask;
         private Task parseSubscribedDataTask;
@@ -37,15 +40,25 @@ namespace TDAmeritradeApi.Client
         private Dictionary<string, LevelOneQuote> existingQuotes = new Dictionary<string, LevelOneQuote>();
         private Dictionary<string, List<string>> subscriptionLookup = new Dictionary<string, List<string>>();
         private Uri tdStreamingUri;
+        private string lastQosCommand;
+        private string lastCommandForRetry;
+        private bool isReconnecting;
 
         public SubscribedMarketData MarketData { get; } = new SubscribedMarketData();
 
-        public bool IsConnected { get => clientWebSocket?.State == WebSocketState.Open; }
+        public bool IsConnected { get => clientWebSocket?.IsRunning ?? false; }
 
         public MarketDataStreamer(string clientID, UserAccountsAndPreferencesApiClient userAccountsAndPreferencesApiClient)
         {
             this.clientID = clientID;
             this.userAccountsAndPreferencesApiClient = userAccountsAndPreferencesApiClient;
+            clientWebSocketFactory = new Func<ClientWebSocket>(() => new ClientWebSocket
+            {
+                Options =
+                {
+                    KeepAliveInterval = TimeSpan.FromSeconds(5),
+                }
+            });
         }
 
         public async Task LoginAsync(string selectedAccountID = null)
@@ -110,8 +123,6 @@ namespace TDAmeritradeApi.Client
                 };
 
                 await Send(request);
-
-                await clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
             }
         }
 
@@ -142,9 +153,12 @@ namespace TDAmeritradeApi.Client
             else
                 key = $"{activeTradeGroupType}{duration.ToString().Replace('_', '-')}";
 
+            string serviceName = $"ACTIVES_{activeTradeGroupType}";
+            var _ = GetSubscriptionCommand(serviceName);
+
             var request = new Request()
             {
-                service = $"ACTIVES_{activeTradeGroupType.ToString()}",
+                service = serviceName,
                 command = "SUBS",
                 parameters = new Dictionary<string, string>()
                 {
@@ -226,11 +240,9 @@ namespace TDAmeritradeApi.Client
             await Send(request);
         }
 
-        public async Task SubscribeToLevelOneQuoteDataAsync(QuoteType quoteType, params string[] symbols)
+        private string GetSubscriptionCommand(string serviceName, params string[] symbols)
         {
-            var serviceName = quoteType == QuoteType.Equity ? "QUOTE" : quoteType.ToString().ToUpperInvariant();
-
-            string commandName;
+            string commandName = null;
             if (!subscriptionLookup.ContainsKey(serviceName))
             {
                 subscriptionLookup.Add(serviceName, symbols.ToList());
@@ -244,9 +256,19 @@ namespace TDAmeritradeApi.Client
                     subscriptionLookup[serviceName].AddRange(symbols);
                     commandName = "ADD";
                 }
-                else
-                    return; //Already subscribed
             }
+
+            return commandName;
+        }
+
+        public async Task SubscribeToLevelOneQuoteDataAsync(QuoteType quoteType, params string[] symbols)
+        {
+            var serviceName = quoteType == QuoteType.Equity ? "QUOTE" : quoteType.ToString().ToUpperInvariant();
+
+            var commandName = GetSubscriptionCommand(serviceName, symbols);
+
+            if (commandName == null)
+                return; //already exists
 
             var request = new Request()
             {
@@ -284,10 +306,16 @@ namespace TDAmeritradeApi.Client
 
         public async Task SubscribeToLevelTwoQuoteDataAsync(BookType bookType, params string[] symbols)
         {
+            var serviceName = $"{bookType}_BOOK";
+            var commandName = GetSubscriptionCommand(serviceName, symbols);
+
+            if (commandName == null)
+                return; //already exists
+
             var request = new Request()
             {
-                service = $"{bookType}_BOOK",
-                command = "SUBS",
+                service = serviceName,
+                command = commandName,
                 parameters = new Dictionary<string, string>()
                 {
                     {"keys", string.Join(",",symbols)},
@@ -346,6 +374,173 @@ namespace TDAmeritradeApi.Client
             await Send(request);
         }
 
+        public async Task UnsubscribeAsync(MarketDataType marketDataType, string symbol)
+        {
+            if (MarketData[marketDataType].TryRemove(symbol, out dynamic value))
+            {
+                object item = GetItem(value);
+
+                var symbols = MarketData[marketDataType].Where(kvp =>
+                {
+                    object existingItem = GetItem(kvp.Value);
+
+                    return existingItem.GetType() == item.GetType();
+
+                }).Select(kvp => kvp.Key).ToList();
+
+                var serviceName = GetServiceByType(item);
+
+                await UnsubscribeAsync(serviceName);
+
+                await SubscribeAsync(serviceName, symbols.ToArray());
+            }
+        }
+
+        private async Task SubscribeAsync(StreamerDataService serviceName, string[] symbols)
+        {
+            switch (serviceName)
+            {
+                case StreamerDataService.ACCT_ACTIVITY:
+                    await SubscribeToAccountActivityAsync();
+                    break;
+                case StreamerDataService.ACTIVES_NASDAQ:
+                    await SubscribeToMostActiveTradesAsync(TradeVenueType.NASDAQ, ActiveTradeSubscriptionDuration._ALL);
+                    break;
+                case StreamerDataService.ACTIVES_NYSE:
+                    await SubscribeToMostActiveTradesAsync(TradeVenueType.NYSE, ActiveTradeSubscriptionDuration._ALL);
+                    break;
+                case StreamerDataService.ACTIVES_OTCBB:
+                    await SubscribeToMostActiveTradesAsync(TradeVenueType.OTCBB, ActiveTradeSubscriptionDuration._ALL);
+                    break;
+                case StreamerDataService.ACTIVES_OPTIONS:
+                    await SubscribeToMostActiveTradesAsync(TradeVenueType.OPTIONS, ActiveTradeSubscriptionDuration._ALL);
+                    break;
+                case StreamerDataService.FOREX_BOOK:
+                    await SubscribeToLevelTwoQuoteDataAsync(BookType.FOREX, symbols);
+                    break;
+                case StreamerDataService.FUTURES_BOOK:
+                    await SubscribeToLevelTwoQuoteDataAsync(BookType.FUTURES, symbols);
+                    break;
+                case StreamerDataService.LISTED_BOOK:
+                    await SubscribeToLevelTwoQuoteDataAsync(BookType.LISTED, symbols);
+                    break;
+                case StreamerDataService.NASDAQ_BOOK:
+                    await SubscribeToLevelTwoQuoteDataAsync(BookType.NASDAQ, symbols);
+                    break;
+                case StreamerDataService.OPTIONS_BOOK:
+                    await SubscribeToLevelTwoQuoteDataAsync(BookType.OPTIONS, symbols);
+                    break;
+                case StreamerDataService.FUTURES_OPTIONS_BOOK:
+                    await SubscribeToLevelTwoQuoteDataAsync(BookType.FUTURES_OPTIONS, symbols);
+                    break;
+                case StreamerDataService.CHART_EQUITY:
+                    await SubscribeToMinuteChartDataAsync(true, symbols);
+                    break;
+                case StreamerDataService.CHART_FUTURES:
+                    await SubscribeToMinuteChartDataAsync(false, symbols);
+                    break;
+                case StreamerDataService.CHART_HISTORY_FUTURES:
+                    await GetHistoryFuturesChartAsync(ChartFrequency.d1, symbols: symbols);
+                    break;
+                case StreamerDataService.QUOTE:
+                    await SubscribeToLevelOneQuoteDataAsync(QuoteType.Equity, symbols);
+                    break;
+                case StreamerDataService.LEVELONE_FUTURES:
+                    await SubscribeToLevelOneQuoteDataAsync(QuoteType.Futures, symbols);
+                    break;
+                case StreamerDataService.LEVELONE_FOREX:
+                    await SubscribeToLevelOneQuoteDataAsync(QuoteType.Forex, symbols);
+                    break;
+                case StreamerDataService.LEVELONE_FUTURES_OPTIONS:
+                    await SubscribeToLevelOneQuoteDataAsync(QuoteType.FuturesOptions, symbols);
+                    break;
+                case StreamerDataService.OPTION:
+                    await SubscribeToLevelOneQuoteDataAsync(QuoteType.Option, symbols);
+                    break;
+                case StreamerDataService.NEWS_HEADLINE:
+                case StreamerDataService.NEWS_STORY:
+                case StreamerDataService.NEWS_HEADLINE_LIST:
+                    await SubscribeToNewsHeadlinesAsync(symbols);
+                    break;
+                case StreamerDataService.TIMESALE_EQUITY:
+                    await SubscribeToTimeSaleAsync(InstrumentType.EQUITY, symbols);
+                    break;
+                case StreamerDataService.TIMESALE_FUTURES:
+                    await SubscribeToTimeSaleAsync(InstrumentType.FUTURES, symbols);
+                    break;
+                case StreamerDataService.TIMESALE_FOREX:
+                    await SubscribeToTimeSaleAsync(InstrumentType.FOREX, symbols);
+                    break;
+                case StreamerDataService.TIMESALE_OPTIONS:
+                    await SubscribeToTimeSaleAsync(InstrumentType.OPTIONS, symbols);
+                    break;
+                case StreamerDataService.STREAMER_SERVER:
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private StreamerDataService GetServiceByType(object item)
+        {
+            if (item is EquityLevelOneQuote)
+                return StreamerDataService.QUOTE;
+            else if (item is OptionLevelOneQuote)
+                return StreamerDataService.OPTION;
+            else if (item is MinuteChartData chart)
+            {
+                if (chart.Type == InstrumentType.FUTURES)
+                    return StreamerDataService.CHART_FUTURES;
+                else
+                    return StreamerDataService.CHART_EQUITY;
+            }
+            else if (item is NewsData)
+                return StreamerDataService.NEWS_HEADLINE;
+            else if (item is TimeSales sales)
+            {
+                if (sales.Type == InstrumentType.EQUITY)
+                    return StreamerDataService.TIMESALE_EQUITY;
+                else if (sales.Type == InstrumentType.FUTURES)
+                    return StreamerDataService.TIMESALE_FUTURES;
+                else if (sales.Type == InstrumentType.OPTIONS)
+                    return StreamerDataService.TIMESALE_OPTIONS;
+                else
+                    return StreamerDataService.TIMESALE_FOREX;
+            }
+            else if (item is ActiveTradeSubscription activeTradeSubscription)
+            {
+                if (activeTradeSubscription.Type.Contains("NYSE"))
+                    return StreamerDataService.ACTIVES_NYSE;
+                else if (activeTradeSubscription.Type.Contains("NASDAQ"))
+                    return StreamerDataService.ACTIVES_NASDAQ;
+                else if (activeTradeSubscription.Type.Contains("OPT"))
+                    return StreamerDataService.ACTIVES_OPTIONS;
+                else
+                    return StreamerDataService.ACTIVES_OTCBB;
+            }
+            else
+                return StreamerDataService.ACCT_ACTIVITY;
+
+        }
+
+        private object GetItem(dynamic value)
+        {
+            //Queue
+            if (value is IEnumerable enumerable)
+            {
+                var enumerator = enumerable.GetEnumerator();
+
+                //move to first object
+                enumerator.MoveNext();
+
+                return enumerator.Current;
+            }
+            else //Instance
+            {
+                return value;
+            }
+        }
+
         public async Task UnsubscribeAsync(StreamerDataService serviceName)
         {
             var request = new Request()
@@ -356,6 +551,8 @@ namespace TDAmeritradeApi.Client
             await Send(request);
 
             RemoveSubscribedData(serviceName);
+
+            subscriptionLookup.Remove(serviceName.ToString());
         }
 
         private void RemoveSubscribedData(StreamerDataService serviceName)
@@ -420,9 +617,7 @@ namespace TDAmeritradeApi.Client
 
         private async Task Send(Request request)
         {
-            if (tdStreamingUri != null && clientWebSocket != null && (clientWebSocket.State == WebSocketState.Closed || clientWebSocket.State == WebSocketState.Aborted))
-                await LoginAsync(accountID); //Reconnect
-            else if (clientWebSocket == null)
+            if (clientWebSocket == null)
                 throw new InvalidOperationException("Call LoginAsync first before using the other methods.");
 
             var response = await SendSocketMessage(request);
@@ -435,7 +630,7 @@ namespace TDAmeritradeApi.Client
 
         private async Task ConnectSocket(StreamerInfo streamerInfo)
         {
-            if (clientWebSocket == null || clientWebSocket.State == WebSocketState.Closed || clientWebSocket.State == WebSocketState.None || clientWebSocket.State == WebSocketState.Aborted)
+            if (clientWebSocket == null)
             {
                 tdStreamingUri = new Uri($"wss://{streamerInfo.streamerSocketUrl}/ws");
                 //
@@ -445,21 +640,66 @@ namespace TDAmeritradeApi.Client
 
         private async Task StartWebSocketAsync()
         {
-            if (clientWebSocket != null && (clientWebSocket.State == WebSocketState.Closed || clientWebSocket.State == WebSocketState.Aborted))
-            {
-                clientWebSocket.Dispose();
-            }
+            clientWebSocket = new WebsocketClient(tdStreamingUri, clientWebSocketFactory);
 
-            clientWebSocket = new ClientWebSocket();
-            clientWebSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(1);
-            await clientWebSocket.ConnectAsync(tdStreamingUri, CancellationToken.None);
+            clientWebSocket.ReconnectionHappened.Subscribe(async info =>
+            {
+                if (info.Type != ReconnectionType.Initial)
+                {
+                    isReconnecting = true;
+
+                    Console.WriteLine($"Reconnection happened, type: {info.Type}");
+
+                    await LoginAsync();
+
+                    clientWebSocket.Send(lastQosCommand);
+
+                    foreach (var serviceNameToSymbols in subscriptionLookup)
+                    {
+                        //TODO: Figure how to pass in other types
+                        if(!lastCommandForRetry.Contains(serviceNameToSymbols.Key))
+                            await SubscribeAsync(Enum.Parse<StreamerDataService>(serviceNameToSymbols.Key), serviceNameToSymbols.Value.ToArray());
+                    }
+
+                    clientWebSocket.Send(lastCommandForRetry);
+
+                    isReconnecting = false;
+                }
+            });
+
+            clientWebSocket.DisconnectionHappened.Subscribe(info =>
+            {
+                if (info.Type != DisconnectionType.Exit)
+                {
+                    Console.WriteLine($"Disconnection happened, type: {info.Type}");
+                }
+            });
+
+            clientWebSocket.MessageReceived.Subscribe(msg =>
+            {
+                Console.WriteLine($"Message received: {msg}");
+
+                if (msg.MessageType == WebSocketMessageType.Text)
+                {
+                    var responseJson = msg.Text;
+                    bool wasSuccess = TryToDeserialize(responseJson, options, out StreamerResponse response);
+                    if (wasSuccess && response.notify == null)
+                    {
+                        SaveResponse(response.response);
+                        SaveData(response.data);
+                        SaveData(response.snapshot);
+                    }
+                }
+            });
+
+            await clientWebSocket.Start();
 
             if (cancellationTokenSource == null || cancellationTokenSource.IsCancellationRequested)
                 cancellationTokenSource = new CancellationTokenSource();
 
             //Start Receiving
-            if (receiveMessagesTask == null || receiveMessagesTask.IsCompleted)
-                receiveMessagesTask = Task.Run(StartReceivingMessages);
+            //if (receiveMessagesTask == null || receiveMessagesTask.IsCompleted)
+            //    receiveMessagesTask = Task.Run(StartReceivingMessages);
             if (parseSubscribedDataTask == null || parseSubscribedDataTask.IsCompleted)
                 parseSubscribedDataTask = Task.Run(ParseSubscribedData);
         }
@@ -468,7 +708,7 @@ namespace TDAmeritradeApi.Client
         {
             while (!cancellationTokenSource.Token.IsCancellationRequested)
             {
-                if (clientWebSocket.State == WebSocketState.Open && !subscribedDataQueue.IsEmpty)
+                if (clientWebSocket.IsRunning && !subscribedDataQueue.IsEmpty)
                 {
                     DataResponse data = null;
                     try
@@ -576,43 +816,46 @@ namespace TDAmeritradeApi.Client
                 throw new NotSupportedException($"Cannot find quote type for {serviceName}");
         }
 
-        private async void StartReceivingMessages()
-        {
-            try
-            {
-                var buffer = new byte[ReceiveBufferSize];
+        //private async void StartReceivingMessages()
+        //{
+        //    try
+        //    {
+        //        var buffer = new byte[ReceiveBufferSize];
 
-                while (!cancellationTokenSource.Token.IsCancellationRequested)
-                {
-                    if (clientWebSocket.State == WebSocketState.Open)
-                    {
-                        var result = await clientWebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        //        while (!cancellationTokenSource.Token.IsCancellationRequested)
+        //        {
+        //            if (clientWebSocket.IsRunning)
+        //            {
+        //                var result = await clientWebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
-                        if (result.MessageType == WebSocketMessageType.Text)
-                        {
-                            var responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                            bool wasSuccess = TryToDeserialize(responseJson, options, out StreamerResponse response);
-                            if (wasSuccess)
-                            {
-                                SaveResponse(response.response);
-                                SaveData(response.data);
-                                SaveData(response.snapshot);
-                            }
-                        }
-                        else if (result.MessageType == WebSocketMessageType.Binary)
-                        {
-                        }
-                        else if (result.MessageType == WebSocketMessageType.Close)
-                        {
-                            if (clientWebSocket.State != WebSocketState.Closed)
-                                await clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
-                            cancellationTokenSource.Cancel();
-                        }
-                    }
-                }
-            }
-            catch (WebSocketException) { }
-        }
+        //                if (result.MessageType == WebSocketMessageType.Text)
+        //                {
+        //                    var responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
+        //                    bool wasSuccess = TryToDeserialize(responseJson, options, out StreamerResponse response);
+        //                    if (wasSuccess && response.notify == null)
+        //                    {
+        //                        SaveResponse(response.response);
+        //                        SaveData(response.data);
+        //                        SaveData(response.snapshot);
+        //                    }
+        //                }
+        //                else if (result.MessageType == WebSocketMessageType.Binary)
+        //                {
+        //                }
+        //                else if (result.MessageType == WebSocketMessageType.Close)
+        //                {
+        //                    if (clientWebSocket.State != WebSocketState.Closed)
+        //                        await clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+        //                    cancellationTokenSource.Cancel();
+        //                }
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine(ex);
+        //    }
+        //}
 
         private static bool TryToDeserialize<T>(string json, JsonSerializerOptions? options, out T? jsonValue)
         {
@@ -665,8 +908,13 @@ namespace TDAmeritradeApi.Client
             };
 
             var body = JsonSerializer.Serialize(streamerRequest, options);
-            var bytes = Encoding.UTF8.GetBytes(body);
-            await clientWebSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, endOfMessage: true, cancellationToken: CancellationToken.None);
+
+            if (request.command == "QOS")
+                lastQosCommand = body;
+            else if (request.command != "LOGIN" && request.command != "LOGOUT" && !isReconnecting)
+                lastCommandForRetry = body;
+
+            clientWebSocket.Send(body);
 
             //wait for response
             Response response = null;
@@ -674,7 +922,7 @@ namespace TDAmeritradeApi.Client
             timeout.Start();
             await Task.Run(() =>
             {
-                while (response == null && timeout.ElapsedMilliseconds < 10000)
+                while (response == null && timeout.ElapsedMilliseconds < WaitForResponseTimeout)
                 {
                     responseDictionary.TryGetValue(request.requestid, out response);
                 }

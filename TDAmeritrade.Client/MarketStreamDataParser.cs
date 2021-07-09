@@ -149,6 +149,7 @@ namespace TDAmeritradeApi.Client
                 int i = 0;
                 actives = new ActiveTradeSubscription()
                 {
+                    Type = datum["key"].Split('_')[0],
                     ID = long.Parse(groups[i++]),
                     SampleDuration = groups[i++],
                     StartTime = TimeSpan.Parse(groups[i++]),
@@ -386,7 +387,8 @@ namespace TDAmeritradeApi.Client
                 LastPrice = GetValue<double>(2, datum),
                 LastSize = GetValue<double>(3, datum),
                 LastSequence = GetValue<long>(4, datum),
-                UniqueNumber = long.Parse(datum["seq"])
+                UniqueNumber = long.Parse(datum["seq"]),
+                Type = instrumentType
             });
         }
 
