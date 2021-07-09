@@ -677,7 +677,7 @@ namespace TDAmeritradeApi.Client
 
             clientWebSocket.MessageReceived.Subscribe(msg =>
             {
-                Console.WriteLine($"Message received: {msg}");
+                //Console.WriteLine($"Message received: {msg}");
 
                 if (msg.MessageType == WebSocketMessageType.Text)
                 {
