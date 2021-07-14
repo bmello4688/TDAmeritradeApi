@@ -7,11 +7,11 @@ namespace TDAmeritradeApi.Client.Models.Streamer
 {
     public class SubscribedMarketData
     {
-        private readonly ConcurrentDictionary<MarketDataType, ConcurrentDictionary<string, dynamic>> marketDataDictionary = new ConcurrentDictionary<MarketDataType, ConcurrentDictionary<string, dynamic>>();
+        private readonly ConcurrentDictionary<MarketDataType, ConcurrentDictionary<string, StoredData>> marketDataDictionary = new ConcurrentDictionary<MarketDataType, ConcurrentDictionary<string, StoredData>>();
 
         public event EventHandler<MarketDataType> DataReceived;
 
-        public ConcurrentDictionary<string, dynamic> this[MarketDataType marketDataType]
+        public ConcurrentDictionary<string, StoredData> this[MarketDataType marketDataType]
         {
             get
             {
@@ -24,7 +24,7 @@ namespace TDAmeritradeApi.Client.Models.Streamer
             //initialize
             foreach (var item in Enum.GetValues<MarketDataType>())
             {
-                marketDataDictionary.TryAdd(item, new ConcurrentDictionary<string, dynamic>());
+                marketDataDictionary.TryAdd(item, new ConcurrentDictionary<string, StoredData>());
             }
         }
 
@@ -33,9 +33,9 @@ namespace TDAmeritradeApi.Client.Models.Streamer
             foreach (var instance in instances)
             {
                 if (!marketDataDictionary[marketDataType].ContainsKey(instance.Key))
-                    marketDataDictionary[marketDataType].TryAdd(instance.Key, instance.Value);
+                    marketDataDictionary[marketDataType].TryAdd(instance.Key, new StoredData(instance.Value));
                 else
-                    marketDataDictionary[marketDataType][instance.Key] = instance.Value;
+                    marketDataDictionary[marketDataType][instance.Key].Data = instance.Value;
             }
 
             if(instances.Count > 0)
@@ -47,9 +47,13 @@ namespace TDAmeritradeApi.Client.Models.Streamer
             foreach (var item in items)
             {
                 if (!marketDataDictionary[marketDataType].ContainsKey(item.Key))
-                    marketDataDictionary[marketDataType].TryAdd(item.Key, new ConcurrentQueue<T>());
-                
-                marketDataDictionary[marketDataType][item.Key].Enqueue(item.Value);
+                {
+                    var queue = new ConcurrentQueue<T>();
+                    queue.Enqueue(item.Value);
+                    marketDataDictionary[marketDataType].TryAdd(item.Key, new StoredData(queue));
+                }
+                else
+                    marketDataDictionary[marketDataType][item.Key].Data.Enqueue(item.Value);
             }
 
             if (items.Count > 0)
@@ -63,7 +67,7 @@ namespace TDAmeritradeApi.Client.Models.Streamer
 
             foreach (var symbol in symbols)
             {
-                this[marketDataType].Remove(symbol, out dynamic _);
+                this[marketDataType].Remove(symbol, out StoredData _);
             }
         }
     }

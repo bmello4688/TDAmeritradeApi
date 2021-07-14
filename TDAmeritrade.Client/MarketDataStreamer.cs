@@ -381,8 +381,7 @@ namespace TDAmeritradeApi.Client
                 .Where(kvp => symbolsToRemove.Contains(kvp.Key))
                 .Select(kvp =>
                 {
-                    object existingItem = GetItem(kvp.Value);
-                    return GetServiceByType(existingItem);
+                    return GetServiceByType(kvp.Value.IndividualItemType);
 
                 }).Distinct();
 
@@ -390,8 +389,7 @@ namespace TDAmeritradeApi.Client
             {
                 var remainingSymbols = MarketData[marketDataType].Where(kvp =>
                 {
-                    object existingItem = GetItem(kvp.Value);
-                    var service = GetServiceByType(existingItem);
+                    var service = GetServiceByType(kvp.Value.IndividualItemType);
 
                     return service == serviceName &&
                             !symbolsToRemove.Contains(kvp.Key);
@@ -400,7 +398,8 @@ namespace TDAmeritradeApi.Client
 
                 await UnsubscribeAsync(serviceName);
 
-                await SubscribeAsync(serviceName, remainingSymbols.ToArray());
+                if(remainingSymbols.Count > 0)
+                    await SubscribeAsync(serviceName, remainingSymbols.ToArray());
             }
         }
 
@@ -527,26 +526,8 @@ namespace TDAmeritradeApi.Client
                     return StreamerDataService.ACTIVES_OTCBB;
             }
             else
-                return StreamerDataService.ACCT_ACTIVITY;
+                throw new InvalidOperationException("Item is null");
 
-        }
-
-        private object GetItem(dynamic value)
-        {
-            //Queue
-            if (value is IEnumerable enumerable)
-            {
-                var enumerator = enumerable.GetEnumerator();
-
-                //move to first object
-                enumerator.MoveNext();
-
-                return enumerator.Current;
-            }
-            else //Instance
-            {
-                return value;
-            }
         }
 
         public async Task UnsubscribeAsync(StreamerDataService serviceName)
