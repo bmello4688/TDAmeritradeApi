@@ -119,7 +119,7 @@ namespace TDClientTester
                 .First(x => x.Key.Contains("OPTS")).Value;
 
             //null on market close days
-            var trade = optionsSubscription?.Entries[0].Trades[0];
+            var trade = optionsSubscription.Data?.Entries[0].Trades[0];
 
             while (!receivedEvent)
                 Thread.Sleep(100);

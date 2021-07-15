@@ -13,6 +13,7 @@ namespace TDAmeritradeApi.Client
         private readonly string clientID;
         private readonly string redirectURI;
         private readonly string savedTokensPath;
+        private readonly object ensureTokensStayValidTask;
         private object tokenStateLock = new object();
 
         //OAuth token state
@@ -64,10 +65,26 @@ namespace TDAmeritradeApi.Client
             this.redirectURI = redirectURI;
             this.savedTokensPath = savedTokenDirectoryPath ?? Directory.GetCurrentDirectory();
 
+            ensureTokensStayValidTask = Task.Run(EnsureTokensStayValidWhileLoggedIn);
+
             //create path
             Directory.CreateDirectory(this.savedTokensPath);
 
             this.savedTokensPath = Path.Combine(this.savedTokensPath, "tokens.json");
+        }
+
+        private async void EnsureTokensStayValidWhileLoggedIn()
+        {
+            while(true)
+            {
+                try
+                {
+                    if (IsLoggedIn)
+                        await EnsureTokensAreValid();
+                    await Task.Delay(TimeSpan.FromMinutes(1));
+                }
+                catch { }
+            }
         }
 
         private void UpdateTokenState(DateTime timestamp, Dictionary<string, JsonElement> token_dict)
