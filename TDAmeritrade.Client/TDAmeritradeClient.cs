@@ -42,7 +42,7 @@ namespace TDAmeritradeApi.Client
             instrumentsApiClient = new InstrumentsApiClient(baseApiClient);
             watchListsApiClient = new WatchListsApiClient(baseApiClient);
             userAccountsAndPreferencesApiClient = new UserAccountsAndPreferencesApiClient(baseApiClient);
-            streamer = new MarketDataStreamer(clientID, userAccountsAndPreferencesApiClient);
+            streamer = new MarketDataStreamer(this, clientID, userAccountsAndPreferencesApiClient);
         }
 
         public async Task<bool> LogIn()

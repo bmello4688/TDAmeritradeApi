@@ -23,6 +23,7 @@ namespace TDAmeritradeApi.Client
     public class MarketDataStreamer
     {
         private const int WaitForResponseTimeout = 10000;
+        private readonly TDAmeritradeClient client;
         private readonly string clientID;
         private readonly UserAccountsAndPreferencesApiClient userAccountsAndPreferencesApiClient;
         private readonly Func<ClientWebSocket> clientWebSocketFactory;
@@ -48,8 +49,9 @@ namespace TDAmeritradeApi.Client
 
         public bool IsConnected { get => clientWebSocket?.IsRunning ?? false; }
 
-        public MarketDataStreamer(string clientID, UserAccountsAndPreferencesApiClient userAccountsAndPreferencesApiClient)
+        public MarketDataStreamer(TDAmeritradeClient client, string clientID, UserAccountsAndPreferencesApiClient userAccountsAndPreferencesApiClient)
         {
+            this.client = client;
             this.clientID = clientID;
             this.userAccountsAndPreferencesApiClient = userAccountsAndPreferencesApiClient;
             clientWebSocketFactory = new Func<ClientWebSocket>(() => new ClientWebSocket
@@ -63,6 +65,8 @@ namespace TDAmeritradeApi.Client
 
         public async Task LoginAsync(string selectedAccountID = null)
         {
+            await client.LogIn();
+
             var userPrincipal = await userAccountsAndPreferencesApiClient.GetUserPrincipalsAsync();
 
             var streamerInfo = userPrincipal.streamerInfo;
