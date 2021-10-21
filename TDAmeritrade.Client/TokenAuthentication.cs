@@ -105,7 +105,7 @@ namespace TDAmeritradeApi.Client
             }
         }
 
-        public async Task GetCachedTokens()
+        public async Task GetCachedTokens(bool forceGetNewAccessToken)
         {
             var tokenStateJson = await File.ReadAllTextAsync(savedTokensPath);
 
@@ -114,7 +114,7 @@ namespace TDAmeritradeApi.Client
                 tokenState = JsonSerializer.Deserialize<TokenState>(tokenStateJson);
             }
 
-            await EnsureTokensAreValid();
+            await EnsureTokensAreValid(forceGetNewAccessToken);
         }
 
         public async Task GetTokens(string authorization_code)
@@ -130,7 +130,7 @@ namespace TDAmeritradeApi.Client
             await GetTokenRequest(parameters);
         }
 
-        public async Task EnsureTokensAreValid()
+        public async Task EnsureTokensAreValid(bool forceGetNewAccessToken = false)
         {
             if (IsLoggedIn)
             {
@@ -145,7 +145,7 @@ namespace TDAmeritradeApi.Client
                     await GetNewRefreshToken();
                 }
 
-                if (accessTokenTimeLeft < TimeSpan.FromMinutes(5))
+                if (accessTokenTimeLeft < TimeSpan.FromMinutes(5) || forceGetNewAccessToken)
                 {
                     //get new access token
                     await GetNewAccessToken();

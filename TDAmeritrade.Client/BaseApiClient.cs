@@ -37,7 +37,7 @@ namespace TDAmeritradeApi.Client
         {
             if (tokenAuthentication.HasCachedTokens)
             {
-                await tokenAuthentication.GetCachedTokens();
+                await tokenAuthentication.GetCachedTokens(true);
 
                 return true;
             }
@@ -55,14 +55,37 @@ namespace TDAmeritradeApi.Client
 
         public async Task LogIn(ICredentials credentials)
         {
-            if (!tokenAuthentication.HasCachedTokens)
+            bool retry = true;
+            bool invalid_grant_found = false;
+            while (retry)
             {
-                string auth_code = await clientAuthentication.GetAuthorizationCode(credentials);
+                try
+                {
+                    if (!tokenAuthentication.HasCachedTokens || invalid_grant_found)
+                    {
+                        string auth_code = await clientAuthentication.GetAuthorizationCode(credentials);
 
-                await tokenAuthentication.GetTokens(auth_code);
+                        await tokenAuthentication.GetTokens(auth_code);
+                    }
+                    else
+                        await LogIn();
+
+                    retry = false;
+                }
+                catch(Exception ex)
+                {
+                    if (!invalid_grant_found)
+                    {
+                        invalid_grant_found = ex.Message.Contains("invalid_grant");
+                        retry = invalid_grant_found;
+                    }
+                    else
+                    {
+                        retry = false;
+                    }
+                }
             }
-            else
-                await LogIn();
+            
         }
 
         public async Task<T> SendRequest<T>(string endpoint, Method method, List<KeyValuePair<string, string>> parameters, object jsonBody = null, bool authorize = true)
