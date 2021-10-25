@@ -83,6 +83,9 @@ namespace TDAmeritradeApi.Client
                     {
                         retry = false;
                     }
+
+                    if (!retry)
+                        throw;
                 }
             }
             
