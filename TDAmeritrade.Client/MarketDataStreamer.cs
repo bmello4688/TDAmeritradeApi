@@ -768,7 +768,7 @@ namespace TDAmeritradeApi.Client
                             {
                                 var activity = ParseData(data, datum => MarketStreamDataParser.ParseAccountActivityData(datum));
 
-                                MarketData.AddInstanceData(MarketDataType.AccountActivity, activity);
+                                MarketData.AddQueuedData(MarketDataType.AccountActivity, activity);
                             }
                         }
                     }
