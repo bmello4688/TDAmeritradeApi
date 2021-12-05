@@ -6,4 +6,4 @@ https://www.buymeacoffee.com/brianmello
 
 Or
 
-ko-fi.com/brianmello
+http://ko-fi.com/brianmello
