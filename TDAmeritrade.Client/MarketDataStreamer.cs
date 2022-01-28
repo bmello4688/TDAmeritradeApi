@@ -267,7 +267,17 @@ namespace TDAmeritradeApi.Client
 
         public async Task SubscribeToLevelOneQuoteDataAsync(QuoteType quoteType, params string[] symbols)
         {
-            var serviceName = quoteType == QuoteType.Equity ? "QUOTE" : quoteType.ToString().ToUpperInvariant();
+            string serviceName;
+            if (quoteType == QuoteType.Equity)
+                serviceName = "QUOTE";
+            else if (quoteType == QuoteType.Option)
+                serviceName = "OPTION";
+            else if (quoteType == QuoteType.FuturesOptions)
+                serviceName = "LEVELONE_ FUTURES_OPTIONS";
+            else
+            {
+                serviceName = $"LEVELONE_{quoteType.ToString().ToUpperInvariant()}";
+            }
 
             var commandName = GetSubscriptionCommand(serviceName, symbols);
 
@@ -296,7 +306,7 @@ namespace TDAmeritradeApi.Client
                     request.parameters.Add("fields", string.Join(",", Enumerable.Range(0, 36)));
                     break;
                 case QuoteType.Forex:
-                    request.parameters.Add("fields", string.Join(",", Enumerable.Range(0, 29)));
+                    request.parameters.Add("fields", string.Join(",", Enumerable.Range(0, 30)));
                     break;
                 case QuoteType.FuturesOptions:
                     request.parameters.Add("fields", string.Join(",", Enumerable.Range(0, 36)));
@@ -498,6 +508,12 @@ namespace TDAmeritradeApi.Client
                 return StreamerDataService.QUOTE;
             else if (item is OptionLevelOneQuote)
                 return StreamerDataService.OPTION;
+            else if (item is ForexLevelOneQuote)
+                return StreamerDataService.LEVELONE_FOREX;
+            else if (item is FuturesLevelOneQuote)
+                return StreamerDataService.LEVELONE_FUTURES;
+            else if (item is FutureOptionsLevelOneQuote)
+                return StreamerDataService.LEVELONE_FUTURES_OPTIONS;
             else if (item is MinuteChartData chart)
             {
                 if (chart.Type == InstrumentType.FUTURES)
@@ -530,7 +546,7 @@ namespace TDAmeritradeApi.Client
                     return StreamerDataService.ACTIVES_OTCBB;
             }
             else
-                throw new InvalidOperationException("Item is null");
+                throw new NotSupportedException($"{item.GetType().Name}");
 
         }
 

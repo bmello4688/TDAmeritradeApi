@@ -10,15 +10,19 @@ namespace TDAmeritradeApi.Client.Models.Streamer
     public class LevelOneQuote
     {
         public string Symbol { get; internal set; }
-        public float BidPrice { get; internal set; }
-        public float AskPrice { get; internal set; }
-        public float LastPrice { get; internal set; }
-        public float BidSize { get; internal set; }
-        public float AskSize { get; internal set; }
+        public double BidPrice { get; internal set; }
+        public double AskPrice { get; internal set; }
+        public double LastPrice { get; internal set; }
+        public double BidSize { get; internal set; }
+        public double AskSize { get; internal set; }
+
+        public char BidID { get; internal set; }
+        public char AskID { get; internal set; }
+
         public float LastSize { get; internal set; }
         public long TotalVolume { get; internal set; }
         public SecurityStatus SecurityStatus { get; internal set; }
-        public float Mark { get; internal set; }
+        public double Mark { get; internal set; }
         public DateTimeOffset TradeTime { get; internal set; }
         public DateTimeOffset QuoteTime { get; internal set; }
 
@@ -72,5 +76,66 @@ namespace TDAmeritradeApi.Client.Models.Streamer
             PrimaryListingExchangeName = "";
             LastTradeExchange = "";
         }
+    }
+
+    public class FutureOptionsLevelOneQuote : FuturesLevelOneQuote
+    { }
+
+    public class FuturesLevelOneQuote : LevelOneQuote
+    {
+        public double OpenPrice { get; internal set; }
+
+        public double HighPrice { get; internal set; }
+
+        public double LowPrice { get; internal set; }
+
+        public double ClosePrice { get; internal set; }
+
+        public double NetChange { get; internal set; }
+
+        public double PercentChange { get; internal set; }
+
+        public string Description { get; internal set; }
+
+        public char LastID { get; internal set; }
+        public int OpenInterest { get; internal set; }
+        public double Tick { get; internal set; }
+        public double TickAmount { get; internal set; }
+        public string Product { get; internal set; }
+        public string PriceFormat { get; internal set; }
+        public string TradingHours { get; internal set; }
+        public bool IsTradable { get; internal set; }
+        public bool IsActive { get; internal set; }
+        public double Multiplier { get; internal set; }
+        public double SettlementPrice { get; internal set; }
+        public string ActiveSymbol { get; internal set; }
+        public DateTimeOffset ExpirationDate { get; internal set; }
+    }
+
+    public class ForexLevelOneQuote : LevelOneQuote
+    {
+        public double OpenPrice { get; internal set; }
+
+        public double HighPrice { get; internal set; }
+
+        public double LowPrice { get; internal set; }
+
+        public double ClosePrice { get; internal set; }
+
+        public double NetChange { get; internal set; }
+
+        public double PercentChange { get; internal set; }
+
+        public string Description { get; internal set; }
+
+        public int Digits { get; internal set; }
+        public double Tick { get; internal set; }
+        public double TickAmount { get; internal set; }
+        public string Product { get; internal set; }
+        public string TradingHours { get; internal set; }
+        public bool IsTradable { get; internal set; }
+        public string MarketMaker { get; internal set; }
+        public double Past52WeekHigh { get; internal set; }
+        public double Past52WeekLow { get; internal set; }
     }
 }

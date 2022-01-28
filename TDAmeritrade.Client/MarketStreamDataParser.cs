@@ -29,18 +29,18 @@ namespace TDAmeritradeApi.Client
 
             Dictionary<int, (string, Type, Func<object, object>)> equityQuoteDefinitionLookup = new Dictionary<int, (string, Type, Func<object, object>)>()
             {
-                {1, (nameof(marketQuote.BidPrice), typeof(float), null) },
-                {2, (nameof(marketQuote.AskPrice), typeof(float), null) },
-                {3, (nameof(marketQuote.LastPrice), typeof(float), null) },
-                {4, (nameof(marketQuote.BidSize), typeof(float), null) },
-                {5, (nameof(marketQuote.AskSize), typeof(float), null) },
+                {1, (nameof(marketQuote.BidPrice), typeof(double), null) },
+                {2, (nameof(marketQuote.AskPrice), typeof(double), null) },
+                {3, (nameof(marketQuote.LastPrice), typeof(double), null) },
+                {4, (nameof(marketQuote.BidSize), typeof(double), null) },
+                {5, (nameof(marketQuote.AskSize), typeof(double), null) },
                 {8, (nameof(marketQuote.TotalVolume), typeof(long), null) },
                 {9, (nameof(marketQuote.LastSize), typeof(float), In100s) },
                 {16, (nameof(marketQuote.PrimaryListingExchangeID), typeof(char), ConvertToExchangeName) },
                 {26, (nameof(marketQuote.LastTradeExchange), typeof(char), ConvertToExchangeName) },
                 {39, (nameof(marketQuote.PrimaryListingExchangeName), typeof(string), null) },
                 {48, (nameof(marketQuote.SecurityStatus), typeof(SecurityStatus), null) },
-                {49, (nameof(marketQuote.Mark), typeof(float), null) },
+                {49, (nameof(marketQuote.Mark), typeof(double), null) },
                 {50, (nameof(marketQuote.TradeTime), typeof(long), ConvertToDateTimeOffsetMillisecondsFromEpoch) },
                 {51, (nameof(marketQuote.QuoteTime), typeof(long), ConvertToDateTimeOffsetMillisecondsFromEpoch) },
                 {52, (nameof(marketQuote.RegularMarketTradeTime), typeof(long), ConvertToDateTimeOffsetMillisecondsFromEpoch) }
@@ -53,9 +53,9 @@ namespace TDAmeritradeApi.Client
             Dictionary<int, (string, Type, Func<object, object>)> optionQuoteDefinitionLookup = new Dictionary<int, (string, Type, Func<object, object>)>()
             {
                 {1, (nameof(optionMarketQuote.Description), typeof(string), null) },
-                {2, (nameof(optionMarketQuote.BidPrice), typeof(float), null) },
-                {3, (nameof(optionMarketQuote.AskPrice), typeof(float), null) },
-                {4, (nameof(optionMarketQuote.LastPrice), typeof(float), null) },
+                {2, (nameof(optionMarketQuote.BidPrice), typeof(double), null) },
+                {3, (nameof(optionMarketQuote.AskPrice), typeof(double), null) },
+                {4, (nameof(optionMarketQuote.LastPrice), typeof(double), null) },
                 {8, (nameof(optionMarketQuote.TotalVolume), typeof(long), null) },
                 {9, (nameof(optionMarketQuote.OpenInterest), typeof(long), null) },
                 {10, (nameof(optionMarketQuote.Volatility), typeof(float), null) },
@@ -64,8 +64,8 @@ namespace TDAmeritradeApi.Client
                 {13, (nameof(optionMarketQuote.MoneyIntrinsicValue), typeof(float), null) },
                 {16, (nameof(optionMarketQuote.ExpirationYear), typeof(int), null) },
                 {17, (nameof(optionMarketQuote.Multiplier), typeof(float), null) },
-                {20, (nameof(optionMarketQuote.BidSize), typeof(float), null) },
-                {21, (nameof(optionMarketQuote.AskSize), typeof(float), null) },
+                {20, (nameof(optionMarketQuote.BidSize), typeof(double), null) },
+                {21, (nameof(optionMarketQuote.AskSize), typeof(double), null) },
                 {22, (nameof(optionMarketQuote.LastSize), typeof(float), In100s) },
                 {23, (nameof(optionMarketQuote.NetChange), typeof(float), null) },
                 {24, (nameof(optionMarketQuote.StrikePrice), typeof(float), null) },
@@ -87,10 +87,114 @@ namespace TDAmeritradeApi.Client
                 {39, (nameof(optionMarketQuote.UnderlyingPrice), typeof(decimal), null) },
                 {40, (nameof(optionMarketQuote.UVExpirationType), typeof(char), null) },
 
-                {41, (nameof(optionMarketQuote.Mark), typeof(float), null) },
+                {41, (nameof(optionMarketQuote.Mark), typeof(double), null) },
             };
 
             quoteDefinitionMap.Add(QuoteType.Option, optionQuoteDefinitionLookup);
+
+            var futuresMarketQuote = new FuturesLevelOneQuote();
+
+            Dictionary<int, (string, Type, Func<object, object>)> futuresQuoteDefinitionLookup = new Dictionary<int, (string, Type, Func<object, object>)>()
+            {
+                {1, (nameof(futuresMarketQuote.BidPrice), typeof(double), null) },
+                {2, (nameof(futuresMarketQuote.AskPrice), typeof(double), null) },
+                {3, (nameof(futuresMarketQuote.LastPrice), typeof(double), null) },
+                {4, (nameof(futuresMarketQuote.BidSize), typeof(double), null) },
+                {5, (nameof(futuresMarketQuote.AskSize), typeof(double), null) },
+                {6, (nameof(futuresMarketQuote.AskID), typeof(char), null) },
+                {7, (nameof(futuresMarketQuote.BidID), typeof(char), null) },
+
+                {8, (nameof(futuresMarketQuote.TotalVolume), typeof(long), null) },
+                {9, (nameof(futuresMarketQuote.LastSize), typeof(long), null) },
+
+                {10, (nameof(futuresMarketQuote.QuoteTime), typeof(long), ConvertToDateTimeOffsetMillisecondsFromEpoch) },
+                {11, (nameof(futuresMarketQuote.TradeTime), typeof(long), ConvertToDateTimeOffsetMillisecondsFromEpoch) },
+
+                {12, (nameof(futuresMarketQuote.HighPrice), typeof(double), null) },
+                {13, (nameof(futuresMarketQuote.LowPrice), typeof(double), null) },
+                {14, (nameof(futuresMarketQuote.ClosePrice), typeof(double), null) },
+
+                {15, (nameof(futuresMarketQuote.PrimaryListingExchangeID), typeof(string), null) },
+                {16, (nameof(futuresMarketQuote.Description), typeof(string), null) },
+
+                {17, (nameof(futuresMarketQuote.LastID), typeof(char), null) },
+                {18, (nameof(futuresMarketQuote.OpenPrice), typeof(double), null) },
+
+                {19, (nameof(futuresMarketQuote.NetChange), typeof(double), null) },
+                {20, (nameof(futuresMarketQuote.PercentChange), typeof(double), null) },
+                
+                {21, (nameof(futuresMarketQuote.PrimaryListingExchangeName), typeof(string), null) },
+                {22, (nameof(futuresMarketQuote.SecurityStatus), typeof(SecurityStatus), null) },
+                {23, (nameof(futuresMarketQuote.OpenInterest), typeof(int), null) },
+                {24, (nameof(futuresMarketQuote.Mark), typeof(double), null) },
+                {25, (nameof(futuresMarketQuote.Tick), typeof(double), null) },
+                {26, (nameof(futuresMarketQuote.TickAmount), typeof(double), null) },
+
+                {27, (nameof(futuresMarketQuote.Product), typeof(string), null) },
+                {28, (nameof(futuresMarketQuote.PriceFormat), typeof(string), null) },
+                {29, (nameof(futuresMarketQuote.TradingHours), typeof(string), null) },
+
+                {30, (nameof(futuresMarketQuote.IsTradable), typeof(bool), null) },
+                {31, (nameof(futuresMarketQuote.Multiplier), typeof(double), null) },
+                {32, (nameof(futuresMarketQuote.IsActive), typeof(bool), null) },
+                {33, (nameof(futuresMarketQuote.SettlementPrice), typeof(double), null) },
+                {34, (nameof(futuresMarketQuote.ActiveSymbol), typeof(string), null) },
+                {35, (nameof(futuresMarketQuote.ExpirationDate), typeof(long), ConvertToDateTimeOffsetMillisecondsFromEpoch) },
+
+
+            };
+
+            quoteDefinitionMap.Add(QuoteType.Futures, futuresQuoteDefinitionLookup);
+            quoteDefinitionMap.Add(QuoteType.FuturesOptions, futuresQuoteDefinitionLookup);
+
+            //Forex
+            var forexMarketQuote = new ForexLevelOneQuote();
+
+            Dictionary<int, (string, Type, Func<object, object>)> forexQuoteDefinitionLookup = new Dictionary<int, (string, Type, Func<object, object>)>()
+            {
+                {1, (nameof(forexMarketQuote.BidPrice), typeof(double), null) },
+                {2, (nameof(forexMarketQuote.AskPrice), typeof(double), null) },
+                {3, (nameof(forexMarketQuote.LastPrice), typeof(double), null) },
+                {4, (nameof(forexMarketQuote.BidSize), typeof(double), null) },
+                {5, (nameof(forexMarketQuote.AskSize), typeof(double), null) },
+
+                {6, (nameof(forexMarketQuote.TotalVolume), typeof(long), null) },
+                {7, (nameof(forexMarketQuote.LastSize), typeof(long), null) },
+
+                {8, (nameof(forexMarketQuote.QuoteTime), typeof(long), ConvertToDateTimeOffsetMillisecondsFromEpoch) },
+                {9, (nameof(forexMarketQuote.TradeTime), typeof(long), ConvertToDateTimeOffsetMillisecondsFromEpoch) },
+
+                {10, (nameof(forexMarketQuote.HighPrice), typeof(double), null) },
+                {11, (nameof(forexMarketQuote.LowPrice), typeof(double), null) },
+                {12, (nameof(forexMarketQuote.ClosePrice), typeof(double), null) },
+
+                {13, (nameof(forexMarketQuote.PrimaryListingExchangeID), typeof(string), null) },
+                {14, (nameof(forexMarketQuote.Description), typeof(string), null) },
+
+                {15, (nameof(forexMarketQuote.OpenPrice), typeof(double), null) },
+
+                {16, (nameof(forexMarketQuote.NetChange), typeof(double), null) },
+                {17, (nameof(forexMarketQuote.PercentChange), typeof(double), null) },
+
+                {18, (nameof(forexMarketQuote.PrimaryListingExchangeName), typeof(string), null) },
+                {19, (nameof(forexMarketQuote.Digits), typeof(int), null) },
+                {20, (nameof(forexMarketQuote.SecurityStatus), typeof(SecurityStatus), null) },
+
+                {21, (nameof(forexMarketQuote.Tick), typeof(double), null) },
+                {22, (nameof(forexMarketQuote.TickAmount), typeof(double), null) },
+
+                {23, (nameof(forexMarketQuote.Product), typeof(string), null) },
+                {24, (nameof(forexMarketQuote.TradingHours), typeof(string), null) },
+                {25, (nameof(forexMarketQuote.IsTradable), typeof(bool), null) },
+                {26, (nameof(forexMarketQuote.MarketMaker), typeof(string), null) },
+
+                {27, (nameof(forexMarketQuote.Past52WeekHigh), typeof(double), null) },
+                {28, (nameof(forexMarketQuote.Past52WeekLow), typeof(double), null) },
+
+                {29, (nameof(forexMarketQuote.Mark), typeof(double), null) },
+            };
+
+            quoteDefinitionMap.Add(QuoteType.Forex, forexQuoteDefinitionLookup);
         }
 
         private static object In100s(object arg)
@@ -282,13 +386,18 @@ namespace TDAmeritradeApi.Client
                     quote = CreateQuote<OptionLevelOneQuote>(symbol, quote);
                     quoteDefinitionLookup = quoteDefinitionMap[QuoteType.Option];
                     break;
-                //case QuoteType.Futures:
-                //    quote = GetFuturesQuote(datum);
-                //    break;
-                //case QuoteType.Forex:
-                //    break;
-                //case QuoteType.FuturesOptions:
-                //    break;
+                case QuoteType.Futures:
+                    quote = CreateQuote<FuturesLevelOneQuote>(symbol, quote);
+                    quoteDefinitionLookup = quoteDefinitionMap[QuoteType.Futures];
+                    break;
+                case QuoteType.Forex:
+                    quote = CreateQuote<ForexLevelOneQuote>(symbol, quote);
+                    quoteDefinitionLookup = quoteDefinitionMap[QuoteType.Forex];
+                    break;
+                case QuoteType.FuturesOptions:
+                    quote = CreateQuote<FutureOptionsLevelOneQuote>(symbol, quote);
+                    quoteDefinitionLookup = quoteDefinitionMap[QuoteType.FuturesOptions];
+                    break;
                 default:
                     throw new NotSupportedException($"QuoteType {quoteType} not supported");
             }
@@ -317,20 +426,27 @@ namespace TDAmeritradeApi.Client
         {
             foreach (var item in datum)
             {
-                if (int.TryParse(item.Key, out int index) && quoteDefinitionLookup.ContainsKey(index))
+                try
                 {
-                    (string propertyName, Type type, Func<object, object> postConverter) = quoteDefinitionLookup[index];
+                    if (int.TryParse(item.Key, out int index) && quoteDefinitionLookup.ContainsKey(index))
+                    {
+                        (string propertyName, Type type, Func<object, object> postConverter) = quoteDefinitionLookup[index];
 
-                    string value = datum[index.ToString()];
-                    var converter = TypeDescriptor.GetConverter(type);
-                    var propertyValue = converter.ConvertFromInvariantString(value);
+                        string value = datum[index.ToString()];
+                        var converter = TypeDescriptor.GetConverter(type);
+                        var propertyValue = converter.ConvertFromInvariantString(value);
 
-                    var property = quote.GetType().GetProperty(propertyName);
+                        var property = quote.GetType().GetProperty(propertyName);
 
-                    if (postConverter != null)
-                        propertyValue = postConverter(propertyValue);
+                        if (postConverter != null)
+                            propertyValue = postConverter(propertyValue);
 
-                    property.SetValue(quote, propertyValue);
+                        property.SetValue(quote, propertyValue);
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"UpdateQuote error:{quote.GetType().Name} = {item.Key} : {item.Value}");
                 }
             }
         }
