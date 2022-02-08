@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace TDAmeritradeApi.Client
@@ -18,6 +19,7 @@ namespace TDAmeritradeApi.Client
 
         //OAuth token state
         private TokenState tokenState = new TokenState();
+        private static EventWaitHandle tokenWaitHandle = new EventWaitHandle(true, EventResetMode.AutoReset, "{ADBA1567-8E58-4597-8A47-7BB8621EE663}");
 
         public bool IsLoggedIn
         {
@@ -107,7 +109,11 @@ namespace TDAmeritradeApi.Client
 
         public async Task GetCachedTokens(bool forceGetNewAccessToken)
         {
+            tokenWaitHandle.WaitOne();
+
             var tokenStateJson = await File.ReadAllTextAsync(savedTokensPath);
+
+            tokenWaitHandle.Set();
 
             lock (tokenStateLock)
             {
@@ -184,7 +190,11 @@ namespace TDAmeritradeApi.Client
 
             var json = JsonSerializer.Serialize(tokenState);
 
+            tokenWaitHandle.WaitOne();
+
             await File.WriteAllTextAsync(savedTokensPath, json);
+
+            tokenWaitHandle.Set();
         }
 
         private async Task GetNewAccessToken()
