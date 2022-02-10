@@ -44,6 +44,7 @@ namespace TDAmeritradeApi.Client
         private string lastCommandForRetry;
         private bool isReconnecting;
         private bool debugMessages = false;
+        private bool loggedOut = false;
 
         public SubscribedMarketData MarketData { get; } = new SubscribedMarketData();
 
@@ -127,7 +128,16 @@ namespace TDAmeritradeApi.Client
                 };
 
                 await Send(request);
+                await Close();
             }
+        }
+
+        private async Task Close()
+        {
+            cancellationTokenSource.Cancel();
+            await parseSubscribedDataTask;
+            clientWebSocket.Dispose();
+            clientWebSocket = null;
         }
 
         public async Task QosRequestAsync(QualityofServiceType qualityofServiceType)
