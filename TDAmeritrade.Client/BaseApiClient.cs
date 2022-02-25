@@ -122,47 +122,61 @@ namespace TDAmeritradeApi.Client
 
         public async Task<IRestResponse> SendRequest(string endpoint, Method method, List<KeyValuePair<string, string>> parameters, object jsonBody = null, bool authorize = true)
         {
-            RestRequest request = new RestRequest(endpoint) { Method = method };
+            int retryCount = 0;
 
-            if (jsonBody == null)
-                request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
-            else
-                request.AddHeader("Content-Type", "application/json");
-
-
-            if (authorize)
-                request.AddHeader("Authorization", $"Bearer {tokenAuthentication.AccessToken}");
-            else
-                request.AddParameter("apikey", $"{clientID}");
-
-            if (jsonBody != null)
+            while (true)
             {
-                var options = GetJsonSerializerOptions();
+                RestRequest request = new RestRequest(endpoint) { Method = method };
 
-                var body = JsonSerializer.Serialize(jsonBody, options);
-                request.AddParameter("application/json", body, ParameterType.RequestBody);
-            }
+                if (jsonBody == null)
+                    request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
+                else
+                    request.AddHeader("Content-Type", "application/json");
 
-            if (parameters != null)
-            {
-                foreach (var param in parameters)
+
+                if (authorize)
+                    request.AddHeader("Authorization", $"Bearer {tokenAuthentication.AccessToken}");
+                else
+                    request.AddParameter("apikey", $"{clientID}");
+
+                if (jsonBody != null)
                 {
-                    request.AddParameter(param.Key, param.Value);
+                    var options = GetJsonSerializerOptions();
+
+                    var body = JsonSerializer.Serialize(jsonBody, options);
+                    request.AddParameter("application/json", body, ParameterType.RequestBody);
                 }
+
+                if (parameters != null)
+                {
+                    foreach (var param in parameters)
+                    {
+                        request.AddParameter(param.Key, param.Value);
+                    }
+                }
+
+                var response = await restClient.ExecuteAsync(request);
+
+                var responseJson = response.Content;
+
+                if (responseJson.Contains("error"))
+                {
+                    var errorDictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(responseJson);
+
+                    var message = errorDictionary["error"];
+
+                    if (message.Contains("Individual App's transactions per seconds restriction reached.") 
+                        && retryCount < 20)
+                    {
+                        Task.Delay(1200).Wait();
+                        retryCount++;
+                    }
+                    else
+                        throw new Exception(message);
+                }
+                else
+                    return response;
             }
-
-            var response = await restClient.ExecuteAsync(request);
-
-            var responseJson = response.Content;
-
-            if (responseJson.Contains("error"))
-            {
-                var errorDictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(responseJson);
-
-                throw new Exception(errorDictionary["error"]);
-            }
-
-            return response;
         }
     }
 }
